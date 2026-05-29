@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.admin.content.mapper.BodyPartMapper">
+
+    <select id="selectByExerciseId" resultType="com.fitness.admin.content.entity.BodyPart">
+        SELECT bp.* FROM body_part bp
+        INNER JOIN exercise_body_part ebp ON bp.id = ebp.body_part_id
+        WHERE ebp.exercise_id = #{exerciseId} AND bp.deleted = 0
+    </select>
+
+</mapper>
