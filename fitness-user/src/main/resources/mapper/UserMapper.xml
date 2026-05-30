@@ -6,7 +6,7 @@
     <select id="selectTagsByUserId" resultType="com.fitness.admin.user.entity.UserTag">
         SELECT t.* FROM user_tag t
         INNER JOIN user_tag_relation utr ON t.id = utr.tag_id
-        WHERE utr.user_id = #{userId} AND t.deleted = 0
+        WHERE utr.user_id = #{userId}
     </select>
 
 </mapper>

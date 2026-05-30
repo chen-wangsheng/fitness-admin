@@ -6,7 +6,7 @@
     <select id="selectByExerciseId" resultType="com.fitness.admin.content.entity.BodyPart">
         SELECT bp.* FROM body_part bp
         INNER JOIN exercise_body_part ebp ON bp.id = ebp.body_part_id
-        WHERE ebp.exercise_id = #{exerciseId} AND bp.deleted = 0
+        WHERE ebp.exercise_id = #{exerciseId}
     </select>
 
 </mapper>
