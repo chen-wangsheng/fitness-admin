@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Tag(name = "知识库管理")
 @RestController
 @RequestMapping("/ai-knowledge")
@@ -25,6 +28,12 @@ public class AiKnowledgeController extends BaseController {
                                              @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<KnowledgeBase> page = aiKnowledgeService.queryPage(pageNum, pageSize);
         return page((Page) page);
+    }
+
+    @Operation(summary = "获取知识分类")
+    @GetMapping("/categories")
+    public R<List<String>> categories() {
+        return success(Arrays.asList("training", "recovery", "nutrition", "injury", "sleep"));
     }
 
     @Operation(summary = "保存知识")

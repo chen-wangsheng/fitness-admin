@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("community_post")
+@TableName("post")
 public class CommunityPost extends BaseEntity {
 
     private Long userId;
