@@ -10,6 +10,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -70,6 +71,10 @@ public class AuthService {
         userInfo.setUsername(user.getUsername());
         userInfo.setNickname(user.getNickname());
         userInfo.setAvatar(user.getAvatar());
+        
+        // 超级管理员拥有所有权限
+        userInfo.setPermissions(List.of("*"));
+        
         return userInfo;
     }
 }
