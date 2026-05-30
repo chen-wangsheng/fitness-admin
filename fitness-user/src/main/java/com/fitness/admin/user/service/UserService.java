@@ -111,6 +111,7 @@ public class UserService {
     private UserVO convertToVO(User user) {
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);
+        vo.setStatusCode(user.getStatus());
         List<UserTag> tags = userMapper.selectTagsByUserId(user.getId());
         vo.setTags(tags.stream().map(tag -> {
             UserTagVO tagVO = new UserTagVO();

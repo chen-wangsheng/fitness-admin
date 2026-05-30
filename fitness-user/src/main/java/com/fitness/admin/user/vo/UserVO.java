@@ -1,6 +1,7 @@
 package com.fitness.admin.user.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -23,9 +24,15 @@ public class UserVO {
     private String fitnessLevel;
     private Integer workoutDaysPerWeek;
     private Integer workoutDurationMin;
-    private Integer status;
+    private Integer statusCode;
     private List<UserTagVO> tags;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+
+    @JsonGetter("status")
+    public String getStatus() {
+        if (statusCode == null) return "disabled";
+        return statusCode == 1 ? "active" : "disabled";
+    }
 }

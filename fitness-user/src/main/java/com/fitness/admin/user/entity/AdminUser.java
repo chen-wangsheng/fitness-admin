@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 @TableName("admin_user")
 public class AdminUser extends BaseEntity {
 
+    private Long userId;
     private String username;
     private String password;
     private String nickname;

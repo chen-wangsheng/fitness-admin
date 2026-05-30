@@ -7,4 +7,23 @@
         SELECT * FROM admin_user WHERE username = #{username} LIMIT 1
     </select>
 
+    <select id="selectAdminPage" resultType="java.util.Map">
+        SELECT
+            au.id, au.username, au.nickname, au.avatar, au.email, au.phone,
+            au.user_id AS userId, au.role_id AS roleId, au.status,
+            au.last_login_ip AS lastLoginIp, au.last_login_time AS lastLoginTime,
+            au.created_at AS createdAt,
+            ar.name AS roleName
+        FROM admin_user au
+        LEFT JOIN admin_role ar ON au.role_id = ar.id
+        <where>
+            au.deleted = 0
+            <if test="keyword != null and keyword != ''">
+                AND (au.username LIKE CONCAT('%', #{keyword}, '%')
+                    OR au.nickname LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY au.created_at DESC
+    </select>
+
 </mapper>
