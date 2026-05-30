@@ -32,7 +32,6 @@ public class ExerciseService {
     public Page<ExerciseVO> queryPage(ExerciseQueryDTO queryDTO) {
         Page<Exercise> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<Exercise> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Exercise::getDeleted, 0);
 
         if (StringUtils.hasText(queryDTO.getKeyword())) {
             wrapper.like(Exercise::getName, queryDTO.getKeyword());
@@ -117,7 +116,7 @@ public class ExerciseService {
             BodyPartVO bpVO = new BodyPartVO();
             bpVO.setId(bp.getId());
             bpVO.setName(bp.getName());
-            bpVO.setIcon(bp.getIcon());
+            bpVO.setIconUrl(bp.getIconUrl());
             return bpVO;
         }).collect(Collectors.toList()));
         return vo;

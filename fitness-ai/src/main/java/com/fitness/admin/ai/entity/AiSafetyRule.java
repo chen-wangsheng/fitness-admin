@@ -10,10 +10,13 @@ import lombok.EqualsAndHashCode;
 @TableName("ai_safety_rule")
 public class AiSafetyRule extends BaseEntity {
 
-    private String name;
-    private String description;
-    private String keywords;
+    private String ruleType;
+    private String matchMode;
+    private String pattern;
     private String action;
+    private String responseTemplate;
+    private String description;
     private Integer priority;
-    private Integer status;
+    private Integer isEnabled;
+    private Integer regexTimeoutMs;
 }

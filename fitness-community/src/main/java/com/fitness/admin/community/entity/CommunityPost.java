@@ -16,6 +16,4 @@ public class CommunityPost extends BaseEntity {
     private Integer likeCount;
     private Integer commentCount;
     private Integer status;
-    private Integer isTop;
-    private Integer isEssence;
 }

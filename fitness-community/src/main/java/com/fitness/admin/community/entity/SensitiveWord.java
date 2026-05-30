@@ -11,6 +11,6 @@ import lombok.EqualsAndHashCode;
 public class SensitiveWord extends BaseEntity {
 
     private String word;
-    private String type;
-    private Integer status;
+    private String category;
+    private Integer level;
 }

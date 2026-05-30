@@ -16,9 +16,7 @@ public class CategoryService {
 
     public List<ExerciseCategory> list() {
         LambdaQueryWrapper<ExerciseCategory> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ExerciseCategory::getStatus, 1)
-                .eq(ExerciseCategory::getDeleted, 0)
-                .orderByAsc(ExerciseCategory::getSort);
+        wrapper.orderByAsc(ExerciseCategory::getSortOrder);
         return categoryMapper.selectList(wrapper);
     }
 

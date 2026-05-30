@@ -15,7 +15,11 @@ public class Announcement extends BaseEntity {
     private String title;
     private String content;
     private String type;
+    private String target;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private Integer isPopup;
     private Integer status;
-    private LocalDateTime publishTime;
-    private LocalDateTime expireTime;
+    private Integer sortOrder;
+    private Long createdBy;
 }

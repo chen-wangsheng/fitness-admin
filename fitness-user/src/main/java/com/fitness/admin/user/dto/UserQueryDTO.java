@@ -9,7 +9,6 @@ public class UserQueryDTO {
     private Integer gender;
     private String fitnessGoal;
     private String fitnessLevel;
-    private Integer status;
     private Long tagId;
     private Integer pageNum = 1;
     private Integer pageSize = 10;

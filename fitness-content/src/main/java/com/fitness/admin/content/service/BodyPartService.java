@@ -16,9 +16,7 @@ public class BodyPartService {
 
     public List<BodyPart> list() {
         LambdaQueryWrapper<BodyPart> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BodyPart::getStatus, 1)
-                .eq(BodyPart::getDeleted, 0)
-                .orderByAsc(BodyPart::getSort);
+        wrapper.orderByAsc(BodyPart::getSortOrder);
         return bodyPartMapper.selectList(wrapper);
     }
 

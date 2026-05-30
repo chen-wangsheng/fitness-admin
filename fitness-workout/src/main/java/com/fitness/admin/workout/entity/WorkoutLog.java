@@ -5,6 +5,7 @@ import com.fitness.admin.common.base.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -16,14 +17,15 @@ public class WorkoutLog extends BaseEntity {
     private Long userId;
     private Long planId;
     private Long planDayId;
-    private String name;
     private LocalDate workoutDate;
-    private Integer duration;
-    private Integer totalSets;
-    private Integer totalReps;
-    private Integer calories;
-    private String mood;
-    private String notes;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private Integer durationMin;
+    private BigDecimal totalVolumeKg;
+    private Integer totalSets;
+    private BigDecimal estimatedCalories;
+    private String notes;
+    private Integer feelingScore;
+    private Integer rpe;
+    private String status;
 }

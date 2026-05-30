@@ -17,7 +17,6 @@ public class WorkoutRecordService {
     public Page<WorkoutLog> queryPage(WorkoutQueryDTO queryDTO) {
         Page<WorkoutLog> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<WorkoutLog> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(WorkoutLog::getDeleted, 0);
 
         if (queryDTO.getUserId() != null) {
             wrapper.eq(WorkoutLog::getUserId, queryDTO.getUserId());

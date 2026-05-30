@@ -14,7 +14,6 @@ public class Checkin extends BaseEntity {
 
     private Long userId;
     private LocalDate checkinDate;
-    private Integer continuousDays;
-    private Integer totalDays;
-    private String notes;
+    private Long workoutLogId;
+    private String checkinType;
 }

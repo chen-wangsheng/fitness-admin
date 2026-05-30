@@ -17,7 +17,6 @@ public class BodyMetricService {
     public Page<BodyMetric> queryPage(BodyMetricQueryDTO queryDTO) {
         Page<BodyMetric> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<BodyMetric> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BodyMetric::getDeleted, 0);
 
         if (queryDTO.getUserId() != null) {
             wrapper.eq(BodyMetric::getUserId, queryDTO.getUserId());

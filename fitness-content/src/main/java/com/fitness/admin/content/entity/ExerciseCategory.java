@@ -11,7 +11,6 @@ import lombok.EqualsAndHashCode;
 public class ExerciseCategory extends BaseEntity {
 
     private String name;
-    private String icon;
-    private Integer sort;
-    private Integer status;
+    private Integer parentId;
+    private Integer sortOrder;
 }

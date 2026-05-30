@@ -17,7 +17,6 @@ public class UserTagService {
     public List<UserTag> list() {
         LambdaQueryWrapper<UserTag> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserTag::getStatus, 1)
-                .eq(UserTag::getDeleted, 0)
                 .orderByAsc(UserTag::getSort);
         return userTagMapper.selectList(wrapper);
     }

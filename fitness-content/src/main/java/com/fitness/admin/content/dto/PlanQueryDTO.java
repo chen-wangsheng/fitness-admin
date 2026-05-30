@@ -7,8 +7,7 @@ public class PlanQueryDTO {
 
     private String keyword;
     private String fitnessGoal;
-    private String fitnessLevel;
-    private Integer difficulty;
+    private String difficultyLevel;
     private Integer status;
     private Integer aiGenerated;
     private Integer pageNum = 1;

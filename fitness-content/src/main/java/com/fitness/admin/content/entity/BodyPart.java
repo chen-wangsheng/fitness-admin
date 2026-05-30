@@ -11,7 +11,6 @@ import lombok.EqualsAndHashCode;
 public class BodyPart extends BaseEntity {
 
     private String name;
-    private String icon;
-    private Integer sort;
-    private Integer status;
+    private String iconUrl;
+    private Integer sortOrder;
 }

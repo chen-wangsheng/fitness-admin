@@ -33,7 +33,6 @@ public class PlanService {
     public Page<WorkoutPlan> queryPage(PlanQueryDTO queryDTO) {
         Page<WorkoutPlan> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<WorkoutPlan> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(WorkoutPlan::getDeleted, 0);
 
         if (StringUtils.hasText(queryDTO.getKeyword())) {
             wrapper.like(WorkoutPlan::getName, queryDTO.getKeyword());
@@ -41,11 +40,8 @@ public class PlanService {
         if (StringUtils.hasText(queryDTO.getFitnessGoal())) {
             wrapper.eq(WorkoutPlan::getFitnessGoal, queryDTO.getFitnessGoal());
         }
-        if (StringUtils.hasText(queryDTO.getFitnessLevel())) {
-            wrapper.eq(WorkoutPlan::getFitnessLevel, queryDTO.getFitnessLevel());
-        }
-        if (queryDTO.getDifficulty() != null) {
-            wrapper.eq(WorkoutPlan::getDifficulty, queryDTO.getDifficulty());
+        if (StringUtils.hasText(queryDTO.getDifficultyLevel())) {
+            wrapper.eq(WorkoutPlan::getDifficultyLevel, queryDTO.getDifficultyLevel());
         }
         if (queryDTO.getStatus() != null) {
             wrapper.eq(WorkoutPlan::getStatus, queryDTO.getStatus());

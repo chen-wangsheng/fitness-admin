@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.user.dto.UserQueryDTO;
 import com.fitness.admin.user.dto.UserUpdateDTO;
-import com.fitness.admin.user.dto.BatchStatusDTO;
 import com.fitness.admin.user.entity.User;
 import com.fitness.admin.user.entity.UserTag;
 import com.fitness.admin.user.entity.UserTagRelation;
@@ -36,12 +35,8 @@ public class UserService {
     public Page<UserVO> queryUserPage(UserQueryDTO queryDTO) {
         Page<User> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getDeleted, 0);
-
         if (StringUtils.hasText(queryDTO.getKeyword())) {
-            wrapper.and(w -> w.like(User::getNickname, queryDTO.getKeyword())
-                    .or()
-                    .like(User::getPhone, queryDTO.getKeyword()));
+            wrapper.like(User::getNickname, queryDTO.getKeyword());
         }
         if (queryDTO.getGender() != null) {
             wrapper.eq(User::getGender, queryDTO.getGender());
@@ -51,9 +46,6 @@ public class UserService {
         }
         if (StringUtils.hasText(queryDTO.getFitnessLevel())) {
             wrapper.eq(User::getFitnessLevel, queryDTO.getFitnessLevel());
-        }
-        if (queryDTO.getStatus() != null) {
-            wrapper.eq(User::getStatus, queryDTO.getStatus());
         }
 
         wrapper.orderByDesc(User::getCreatedAt);
@@ -73,7 +65,6 @@ public class UserService {
         }
         UserDetailVO vo = new UserDetailVO();
         BeanUtils.copyProperties(convertToVO(user), vo);
-        vo.setAiProfile(user.getAiProfile());
         return vo;
     }
 
@@ -84,11 +75,13 @@ public class UserService {
         user.setNickname(updateDTO.getNickname());
         user.setGender(updateDTO.getGender());
         user.setBirthday(updateDTO.getBirthday());
-        user.setHeight(updateDTO.getHeight());
-        user.setWeight(updateDTO.getWeight());
+        user.setHeightCm(updateDTO.getHeightCm());
+        user.setCurrentWeightKg(updateDTO.getCurrentWeightKg());
+        user.setTargetWeightKg(updateDTO.getTargetWeightKg());
         user.setFitnessGoal(updateDTO.getFitnessGoal());
         user.setFitnessLevel(updateDTO.getFitnessLevel());
-        user.setStatus(updateDTO.getStatus());
+        user.setWorkoutDaysPerWeek(updateDTO.getWorkoutDaysPerWeek());
+        user.setWorkoutDurationMin(updateDTO.getWorkoutDurationMin());
         userMapper.updateById(user);
 
         if (updateDTO.getTagIds() != null) {
@@ -99,16 +92,6 @@ public class UserService {
                 relation.setTagId(tagId);
                 userTagRelationMapper.insert(relation);
             }
-        }
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public void batchUpdateStatus(BatchStatusDTO batchStatusDTO) {
-        for (Long userId : batchStatusDTO.getUserIds()) {
-            User user = new User();
-            user.setId(userId);
-            user.setStatus(batchStatusDTO.getStatus());
-            userMapper.updateById(user);
         }
     }
 

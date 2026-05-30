@@ -16,8 +16,7 @@ public class SensitiveWordService {
 
     public List<SensitiveWord> list() {
         LambdaQueryWrapper<SensitiveWord> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SensitiveWord::getStatus, 1)
-                .eq(SensitiveWord::getDeleted, 0);
+        wrapper.eq(SensitiveWord::getStatus, 1);
         return sensitiveWordMapper.selectList(wrapper);
     }
 

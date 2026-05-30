@@ -12,14 +12,15 @@ public class WorkoutPlan extends BaseEntity {
 
     private String name;
     private String description;
-    private String coverImage;
+    private String coverImageUrl;
+    private String difficultyLevel;
     private String fitnessGoal;
-    private String fitnessLevel;
     private Integer durationWeeks;
     private Integer daysPerWeek;
-    private Integer difficulty;
-    private Integer status;
-    private Integer sort;
-    private Long createBy;
+    private Integer avgDurationMin;
+    private Integer isSystem;
+    private Long createdBy;
     private Integer aiGenerated;
+    private String aiGenerationParams;
+    private Integer status;
 }

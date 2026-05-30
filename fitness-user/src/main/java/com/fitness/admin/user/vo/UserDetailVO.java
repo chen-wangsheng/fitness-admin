@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class UserDetailVO extends UserVO {
 
-    private String aiProfile;
+    private String openid;
     private Integer achievementCount;
     private Integer checkinCount;
 }

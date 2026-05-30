@@ -7,5 +7,5 @@ public class BodyPartVO {
 
     private Long id;
     private String name;
-    private String icon;
+    private String iconUrl;
 }

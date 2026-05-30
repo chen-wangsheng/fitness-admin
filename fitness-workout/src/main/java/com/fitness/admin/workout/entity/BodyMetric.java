@@ -15,14 +15,16 @@ public class BodyMetric extends BaseEntity {
 
     private Long userId;
     private LocalDate recordDate;
-    private BigDecimal weight;
-    private BigDecimal bodyFat;
-    private BigDecimal muscleMass;
+    private BigDecimal weightKg;
+    private BigDecimal bodyFatPct;
+    private BigDecimal muscleMassKg;
     private BigDecimal bmi;
-    private Integer chest;
-    private Integer waist;
-    private Integer hips;
-    private Integer arm;
-    private Integer thigh;
-    private String notes;
+    private BigDecimal chestCm;
+    private BigDecimal waistCm;
+    private BigDecimal hipCm;
+    private BigDecimal leftArmCm;
+    private BigDecimal rightArmCm;
+    private BigDecimal leftThighCm;
+    private BigDecimal rightThighCm;
+    private String note;
 }

@@ -5,21 +5,26 @@ import com.fitness.admin.common.base.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.math.BigDecimal;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("exercise")
 public class Exercise extends BaseEntity {
 
     private String name;
+    private String nameEn;
+    private Integer categoryId;
+    private String difficulty;
+    private String exerciseType;
+    private String equipment;
     private String description;
     private String instructions;
     private String tips;
-    private String videoUrl;
-    private String coverImage;
-    private String exerciseType;
-    private String equipment;
-    private String difficulty;
-    private Integer duration;
-    private Integer calories;
+    private String demoImageUrl;
+    private String demoVideoUrl;
+    private BigDecimal caloriesPerRep;
+    private BigDecimal caloriesPerMin;
+    private Integer isCompound;
     private Integer status;
 }

@@ -12,15 +12,16 @@ public class PlanVO {
     private Long id;
     private String name;
     private String description;
-    private String coverImage;
+    private String coverImageUrl;
+    private String difficultyLevel;
     private String fitnessGoal;
-    private String fitnessLevel;
     private Integer durationWeeks;
     private Integer daysPerWeek;
-    private Integer difficulty;
-    private Integer status;
-    private Integer sort;
+    private Integer avgDurationMin;
+    private Integer isSystem;
+    private Long createdBy;
     private Integer aiGenerated;
+    private Integer status;
     private List<PlanDayVO> days;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

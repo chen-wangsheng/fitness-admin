@@ -12,9 +12,8 @@ public class Achievement extends BaseEntity {
 
     private String name;
     private String description;
-    private String icon;
-    private String type;
-    private Integer requirement;
-    private Integer status;
-    private Integer sort;
+    private String iconUrl;
+    private String conditionType;
+    private Integer conditionValue;
+    private String badgeColor;
 }
