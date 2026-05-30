@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.admin.achievement.mapper.CheckinMapper">
+
+    <!-- 每日打卡人数统计 -->
+    <select id="selectDailyCheckinStats" resultType="java.util.Map">
+        SELECT
+            checkin_date AS checkinDate,
+            COUNT(DISTINCT user_id) AS count
+        FROM checkin
+        WHERE checkin_date BETWEEN #{startDate} AND #{endDate}
+        GROUP BY checkin_date
+        ORDER BY checkin_date
+    </select>
+
+    <!-- 连续打卡排行榜 -->
+    <select id="selectLeaderboard" resultType="java.util.Map">
+        WITH consecutive AS (
+            SELECT
+                user_id,
+                checkin_date,
+                checkin_date - INTERVAL (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY checkin_date)) DAY AS grp
+            FROM checkin
+        ),
+        streaks AS (
+            SELECT
+                user_id,
+                COUNT(*) AS streakDays,
+                MIN(checkin_date) AS startDate,
+                MAX(checkin_date) AS endDate
+            FROM consecutive
+            GROUP BY user_id, grp
+        ),
+        current_streaks AS (
+            SELECT
+                user_id,
+                streakDays,
+                startDate,
+                endDate
+            FROM streaks
+            WHERE endDate >= CURDATE() - INTERVAL 1 DAY
+        )
+        SELECT
+            u.id AS userId,
+            u.nickname,
+            u.avatar_url AS avatarUrl,
+            cs.streakDays,
+            cs.startDate,
+            cs.endDate
+        FROM current_streaks cs
+        INNER JOIN `user` u ON u.id = cs.user_id
+        ORDER BY cs.streakDays DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 今日打卡人数 -->
+    <select id="selectTodayCheckinCount" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT user_id)
+        FROM checkin
+        WHERE checkin_date = #{today}
+    </select>
+
+</mapper>

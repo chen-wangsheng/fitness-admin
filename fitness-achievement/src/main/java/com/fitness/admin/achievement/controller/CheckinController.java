@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+
 @Tag(name = "打卡管理")
 @RestController
 @RequestMapping("/checkin")
@@ -28,5 +31,17 @@ public class CheckinController extends BaseController {
                                        @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<Checkin> page = checkinService.queryPage(pageNum, pageSize);
         return page((Page) page);
+    }
+
+    @Operation(summary = "打卡统计")
+    @GetMapping("/stats")
+    public R<Map<String, Object>> stats(@RequestParam(defaultValue = "7") Integer days) {
+        return R.ok(checkinService.getStats(days));
+    }
+
+    @Operation(summary = "连续打卡排行榜")
+    @GetMapping("/leaderboard")
+    public R<List<Map<String, Object>>> leaderboard(@RequestParam(defaultValue = "20") Integer limit) {
+        return R.ok(checkinService.getLeaderboard(limit));
     }
 }
