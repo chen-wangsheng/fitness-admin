@@ -57,4 +57,19 @@ public class AuthService {
         response.setExpire(StpUtil.getTokenTimeout());
         return response;
     }
+
+    public LoginResponse.UserInfo getCurrentUserInfo() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        AdminUser user = adminUserMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ResultCodeEnum.USER_NOT_FOUND);
+        }
+
+        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo();
+        userInfo.setId(user.getId());
+        userInfo.setUsername(user.getUsername());
+        userInfo.setNickname(user.getNickname());
+        userInfo.setAvatar(user.getAvatar());
+        return userInfo;
+    }
 }

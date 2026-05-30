@@ -37,4 +37,10 @@ public class AuthController extends BaseController {
     public R<LoginResponse> refreshToken() {
         return success(authService.refreshToken());
     }
+
+    @Operation(summary = "获取当前用户信息")
+    @GetMapping("/profile")
+    public R<LoginResponse.UserInfo> profile() {
+        return success(authService.getCurrentUserInfo());
+    }
 }
