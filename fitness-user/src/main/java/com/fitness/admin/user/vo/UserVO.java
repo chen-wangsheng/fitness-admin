@@ -23,6 +23,7 @@ public class UserVO {
     private String fitnessLevel;
     private Integer workoutDaysPerWeek;
     private Integer workoutDurationMin;
+    private Integer status;
     private List<UserTagVO> tags;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

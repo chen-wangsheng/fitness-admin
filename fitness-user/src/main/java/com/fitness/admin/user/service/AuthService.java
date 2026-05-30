@@ -59,6 +59,22 @@ public class AuthService {
         return response;
     }
 
+    public void changePassword(String oldPassword, String newPassword) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        AdminUser user = adminUserMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException(ResultCodeEnum.USER_NOT_FOUND);
+        }
+        String encryptOld = DigestUtil.md5Hex(oldPassword);
+        if (!encryptOld.equals(user.getPassword())) {
+            throw new BizException(ResultCodeEnum.USER_PASSWORD_ERROR);
+        }
+        AdminUser update = new AdminUser();
+        update.setId(userId);
+        update.setPassword(DigestUtil.md5Hex(newPassword));
+        adminUserMapper.updateById(update);
+    }
+
     public LoginResponse.UserInfo getCurrentUserInfo() {
         Long userId = StpUtil.getLoginIdAsLong();
         AdminUser user = adminUserMapper.selectById(userId);

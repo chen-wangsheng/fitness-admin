@@ -2,6 +2,7 @@ package com.fitness.admin.user.controller;
 
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
+import com.fitness.admin.user.dto.ChangePasswordRequest;
 import com.fitness.admin.user.dto.LoginRequest;
 import com.fitness.admin.user.dto.LoginResponse;
 import com.fitness.admin.user.service.AuthService;
@@ -42,5 +43,12 @@ public class AuthController extends BaseController {
     @GetMapping("/profile")
     public R<LoginResponse.UserInfo> profile() {
         return success(authService.getCurrentUserInfo());
+    }
+
+    @Operation(summary = "修改密码")
+    @PutMapping("/password")
+    public R<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request.getOldPassword(), request.getNewPassword());
+        return success();
     }
 }
