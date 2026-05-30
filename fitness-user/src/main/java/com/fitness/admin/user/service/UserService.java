@@ -95,6 +95,19 @@ public class UserService {
         }
     }
 
+    public void updateStatus(Long id, Integer status) {
+        User user = new User();
+        user.setId(id);
+        user.setStatus(status);
+        userMapper.updateById(user);
+    }
+
+    public void batchUpdateStatus(List<Long> userIds, Integer status) {
+        for (Long userId : userIds) {
+            updateStatus(userId, status);
+        }
+    }
+
     private UserVO convertToVO(User user) {
         UserVO vo = new UserVO();
         BeanUtils.copyProperties(user, vo);

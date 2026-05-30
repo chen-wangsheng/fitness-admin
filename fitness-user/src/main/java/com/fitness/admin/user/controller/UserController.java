@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "用户管理")
 @RestController
@@ -44,6 +45,24 @@ public class UserController extends BaseController {
     @PutMapping
     public R<Void> update(@RequestBody UserUpdateDTO updateDTO) {
         userService.updateUser(updateDTO);
+        return success();
+    }
+
+    @Operation(summary = "更新用户状态")
+    @PutMapping("/{id}/status")
+    public R<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Integer status = (Integer) body.get("status");
+        userService.updateStatus(id, status);
+        return success();
+    }
+
+    @Operation(summary = "批量更新用户状态")
+    @PutMapping("/batch-status")
+    public R<Void> batchStatus(@RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<Long> userIds = ((List<Number>) body.get("user_ids")).stream().map(Number::longValue).toList();
+        Integer status = (Integer) body.get("status");
+        userService.batchUpdateStatus(userIds, status);
         return success();
     }
 

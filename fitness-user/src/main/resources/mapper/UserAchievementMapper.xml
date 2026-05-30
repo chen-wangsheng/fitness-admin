@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.admin.user.mapper.UserAchievementMapper">
+
+    <select id="selectByUserId" resultType="java.util.Map">
+        SELECT
+            a.id,
+            a.name,
+            a.description,
+            a.icon_url AS iconUrl,
+            a.badge_color AS badgeColor,
+            ua.unlocked_at AS unlockedAt
+        FROM user_achievement ua
+        INNER JOIN achievement a ON a.id = ua.achievement_id
+        WHERE ua.user_id = #{userId}
+        ORDER BY ua.unlocked_at DESC
+    </select>
+
+</mapper>
