@@ -51,8 +51,7 @@ public class UserController extends BaseController {
     @Operation(summary = "更新用户状态")
     @PutMapping("/{id}/status")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Integer status = (Integer) body.get("status");
-        userService.updateStatus(id, status);
+        userService.updateStatus(id, parseStatus(body.get("status")));
         return success();
     }
 
@@ -60,10 +59,17 @@ public class UserController extends BaseController {
     @PutMapping("/batch-status")
     public R<Void> batchStatus(@RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
-        List<Long> userIds = ((List<Number>) body.get("user_ids")).stream().map(Number::longValue).toList();
-        Integer status = (Integer) body.get("status");
-        userService.batchUpdateStatus(userIds, status);
+        List<Long> userIds = ((List<?>) body.get("user_ids")).stream()
+                .map(item -> Long.valueOf(item.toString())).toList();
+        userService.batchUpdateStatus(userIds, parseStatus(body.get("status")));
         return success();
+    }
+
+    private Integer parseStatus(Object value) {
+        String s = value.toString();
+        if ("active".equals(s) || "1".equals(s)) return 1;
+        if ("disabled".equals(s) || "0".equals(s)) return 0;
+        return Integer.valueOf(s);
     }
 
     @Operation(summary = "标签列表")
