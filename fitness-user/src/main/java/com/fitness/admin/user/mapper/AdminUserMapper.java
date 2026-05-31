@@ -14,4 +14,6 @@ public interface AdminUserMapper extends BaseMapper<AdminUser> {
     AdminUser selectByUsername(String username);
 
     Page<Map<String, Object>> selectAdminPage(Page<Map<String, Object>> page, @Param("keyword") String keyword);
+
+    void updateStatus(@Param("id") Long id, @Param("status") Integer status);
 }

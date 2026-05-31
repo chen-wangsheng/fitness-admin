@@ -33,22 +33,20 @@ public class AdminUserService {
         adminUserMapper.insert(adminUser);
     }
 
-    public void update(Long id, Long roleId, Long userId, String nickname, String email, String phone) {
+    public void update(Long id, Long roleId, Long userId, String nickname, String avatar, String email, String phone) {
         AdminUser adminUser = new AdminUser();
         adminUser.setId(id);
         adminUser.setRoleId(roleId);
         adminUser.setUserId(userId);
         adminUser.setNickname(nickname);
+        adminUser.setAvatar(avatar);
         adminUser.setEmail(email);
         adminUser.setPhone(phone);
         adminUserMapper.updateById(adminUser);
     }
 
     public void updateStatus(Long id, Integer status) {
-        AdminUser adminUser = new AdminUser();
-        adminUser.setId(id);
-        adminUser.setStatus(status);
-        adminUserMapper.updateById(adminUser);
+        adminUserMapper.updateStatus(id, status);
     }
 
     public void resetPassword(Long id) {

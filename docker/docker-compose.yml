@@ -8,6 +8,8 @@ services:
     container_name: fitness-admin
     ports:
       - "8080:8080"
+    env_file:
+      - ../deploy/fitness-admin.env
     environment:
       - SPRING_PROFILES_ACTIVE=prod
       - MYSQL_HOST=mysql

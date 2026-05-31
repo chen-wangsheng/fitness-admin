@@ -55,3 +55,10 @@ logging:
   level:
     com.fitness.admin: debug
     org.springframework.security: debug
+
+cos:
+  secret-id: ${COS_SECRET_ID:}
+  secret-key: ${COS_SECRET_KEY:}
+  region: ${COS_REGION:}
+  bucket: ${COS_BUCKET:}
+  url-prefix: ${COS_URL_PREFIX:}

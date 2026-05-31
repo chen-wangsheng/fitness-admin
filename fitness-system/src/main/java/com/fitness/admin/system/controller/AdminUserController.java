@@ -44,9 +44,10 @@ public class AdminUserController extends BaseController {
         Long roleId = body.get("roleId") != null ? Long.valueOf(body.get("roleId").toString()) : null;
         Long userId = body.get("userId") != null ? Long.valueOf(body.get("userId").toString()) : null;
         String nickname = (String) body.get("nickname");
+        String avatar = (String) body.get("avatar");
         String email = (String) body.get("email");
         String phone = (String) body.get("phone");
-        adminUserService.update(id, roleId, userId, nickname, email, phone);
+        adminUserService.update(id, roleId, userId, nickname, avatar, email, phone);
         return success();
     }
 
