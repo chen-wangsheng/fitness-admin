@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
+import com.fitness.admin.common.utils.SecurityUtil;
 import com.fitness.admin.ai.entity.AiChatMessage;
 import com.fitness.admin.ai.entity.AiChatSession;
 import com.fitness.admin.ai.service.AiChatMonitorService;
@@ -11,6 +12,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Tag(name = "AI对话监控")
 @RestController
@@ -28,6 +31,13 @@ public class AiChatMonitorController extends BaseController {
         return page((Page) page);
     }
 
+    @Operation(summary = "会话详情")
+    @GetMapping("/sessions/{id}")
+    public R<Map<String, Object>> sessionDetail(@PathVariable Long id) {
+        Map<String, Object> detail = aiChatMonitorService.getSessionDetail(id);
+        return R.ok(detail);
+    }
+
     @Operation(summary = "消息列表")
     @GetMapping("/messages/{sessionId}")
     public R<PageResult<AiChatMessage>> messages(@PathVariable Long sessionId,
@@ -35,5 +45,39 @@ public class AiChatMonitorController extends BaseController {
                                                  @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<AiChatMessage> page = aiChatMonitorService.queryMessagePage(sessionId, pageNum, pageSize);
         return page((Page) page);
+    }
+
+    @Operation(summary = "反馈统计")
+    @GetMapping("/feedback-stats")
+    public R<Map<String, Object>> feedbackStats() {
+        Map<String, Object> stats = aiChatMonitorService.getFeedbackStats();
+        return R.ok(stats);
+    }
+
+    @Operation(summary = "标记问题")
+    @PostMapping("/sessions/{sessionId}/messages/{msgId}/issue")
+    public R<Void> markIssue(@PathVariable Long sessionId,
+                             @PathVariable Long msgId,
+                             @RequestBody Map<String, String> body) {
+        Long adminUserId = SecurityUtil.getCurrentUserId();
+        aiChatMonitorService.markIssue(sessionId, msgId, adminUserId, body.get("reason"));
+        return R.ok();
+    }
+
+    @Operation(summary = "更新问题纠正")
+    @PutMapping("/sessions/{sessionId}/messages/{msgId}/issue")
+    public R<Void> updateIssue(@PathVariable Long sessionId,
+                               @PathVariable Long msgId,
+                               @RequestBody Map<String, String> body) {
+        aiChatMonitorService.updateIssue(sessionId, msgId, body.get("correction"));
+        return R.ok();
+    }
+
+    @Operation(summary = "加入知识库")
+    @PostMapping("/sessions/{sessionId}/messages/{msgId}/to-knowledge")
+    public R<Void> toKnowledge(@PathVariable Long sessionId,
+                               @PathVariable Long msgId) {
+        aiChatMonitorService.markToKnowledge(sessionId, msgId);
+        return R.ok();
     }
 }

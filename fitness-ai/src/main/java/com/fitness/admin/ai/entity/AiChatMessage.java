@@ -22,5 +22,6 @@ public class AiChatMessage implements Serializable {
     private Integer tokens;
     private Integer responseTime;
     private Integer safetyStatus;
+    private Integer feedback;
     private LocalDateTime createdAt;
 }
