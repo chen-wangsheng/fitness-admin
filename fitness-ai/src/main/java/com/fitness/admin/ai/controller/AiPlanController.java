@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
+import com.fitness.admin.ai.entity.AiAdjustmentConfig;
 import com.fitness.admin.ai.entity.AiPlan;
+import com.fitness.admin.ai.entity.PlanLoadAdjustment;
 import com.fitness.admin.ai.service.AiAnalyticsService;
 import com.fitness.admin.ai.service.AiPlanService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,11 +34,36 @@ public class AiPlanController extends BaseController {
         return page((Page) page);
     }
 
+    @Operation(summary = "AI计划详情")
+    @GetMapping("/{id}")
+    public R<AiPlan> detail(@PathVariable Long id) {
+        return R.ok(aiPlanService.getDetail(id));
+    }
+
+    @Operation(summary = "计划调整记录")
+    @GetMapping("/{id}/adjustments")
+    public R<List<PlanLoadAdjustment>> adjustments(@PathVariable Long id) {
+        return R.ok(aiPlanService.getAdjustments(id));
+    }
+
+    @Operation(summary = "微调规则配置")
+    @GetMapping("/adjustment-rules")
+    public R<List<AiAdjustmentConfig>> adjustmentRules() {
+        return R.ok(aiPlanService.getAdjustmentRules());
+    }
+
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
     public R<Void> updateStatus(@PathVariable Long id, @RequestParam String status) {
         aiPlanService.updateStatus(id, status);
         return success();
+    }
+
+    @Operation(summary = "转换为系统计划")
+    @PostMapping("/{id}/convert-to-system")
+    public R<Long> convertToSystem(@PathVariable Long id) {
+        Long planId = aiPlanService.convertToSystem(id);
+        return R.ok(planId);
     }
 
     @Operation(summary = "总览数据")
