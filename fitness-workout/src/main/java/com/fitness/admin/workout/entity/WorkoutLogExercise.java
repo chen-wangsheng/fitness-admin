@@ -17,10 +17,5 @@ public class WorkoutLogExercise implements Serializable {
     private Long id;
     private Long workoutLogId;
     private Long exerciseId;
-    private String exerciseName;
-    private Integer sets;
-    private Integer reps;
-    private Integer duration;
-    private Integer restSeconds;
-    private Integer sort;
+    private Integer sortOrder;
 }

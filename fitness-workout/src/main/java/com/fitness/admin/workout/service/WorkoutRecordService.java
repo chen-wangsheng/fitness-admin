@@ -7,6 +7,8 @@ import com.fitness.admin.workout.dto.WorkoutQueryDTO;
 import com.fitness.admin.workout.entity.WorkoutLog;
 import com.fitness.admin.workout.entity.WorkoutLogExercise;
 import com.fitness.admin.workout.mapper.WorkoutLogExerciseMapper;
+import com.fitness.admin.content.entity.Exercise;
+import com.fitness.admin.content.mapper.ExerciseMapper;
 import com.fitness.admin.workout.mapper.WorkoutLogMapper;
 import com.fitness.admin.workout.vo.ExercisePopularityVO;
 import com.fitness.admin.workout.vo.PlanFunnelVO;
@@ -37,6 +39,7 @@ public class WorkoutRecordService {
 
     private final WorkoutLogMapper workoutLogMapper;
     private final WorkoutLogExerciseMapper workoutLogExerciseMapper;
+    private final ExerciseMapper exerciseMapper;
 
     public Page<WorkoutLog> queryPage(WorkoutQueryDTO queryDTO) {
         Page<WorkoutLog> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
@@ -195,9 +198,17 @@ public class WorkoutRecordService {
         exWrapper.in(WorkoutLogExercise::getWorkoutLogId, logIds);
         List<WorkoutLogExercise> exercises = workoutLogExerciseMapper.selectList(exWrapper);
 
-        Map<String, List<WorkoutLogExercise>> grouped = exercises.stream()
-                .filter(e -> e.getExerciseName() != null)
-                .collect(Collectors.groupingBy(WorkoutLogExercise::getExerciseName));
+        Map<Long, List<WorkoutLogExercise>> grouped = exercises.stream()
+                .filter(e -> e.getExerciseId() != null)
+                .collect(Collectors.groupingBy(WorkoutLogExercise::getExerciseId));
+
+        Map<Long, String> exerciseNameMap = new HashMap<>();
+        if (!grouped.isEmpty()) {
+            List<Exercise> exerciseList = exerciseMapper.selectBatchIds(grouped.keySet());
+            for (Exercise ex : exerciseList) {
+                exerciseNameMap.put(ex.getId(), ex.getName());
+            }
+        }
 
         Map<Long, BigDecimal> logVolumeMap = logs.stream()
                 .filter(l -> l.getTotalVolumeKg() != null)
@@ -207,9 +218,9 @@ public class WorkoutRecordService {
                 .collect(Collectors.toMap(WorkoutLog::getId, WorkoutLog::getUserId, (a, b) -> a));
 
         List<ExercisePopularityVO> result = new ArrayList<>();
-        for (Map.Entry<String, List<WorkoutLogExercise>> entry : grouped.entrySet()) {
+        for (Map.Entry<Long, List<WorkoutLogExercise>> entry : grouped.entrySet()) {
             ExercisePopularityVO vo = new ExercisePopularityVO();
-            vo.setName(entry.getKey());
+            vo.setName(exerciseNameMap.getOrDefault(entry.getKey(), "未知动作"));
             vo.setCount((long) entry.getValue().size());
 
             BigDecimal totalVol = entry.getValue().stream()

@@ -19,9 +19,9 @@ public class AiChatMessage implements Serializable {
     private Long sessionId;
     private String role;
     private String content;
-    private Integer tokens;
-    private Integer responseTime;
-    private Integer safetyStatus;
+    private String ragRefs;
+    private String structuredData;
+    private Integer tokenCount;
     private Integer feedback;
     private LocalDateTime createdAt;
 }
