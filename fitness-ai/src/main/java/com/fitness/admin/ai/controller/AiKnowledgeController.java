@@ -12,7 +12,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,8 +36,23 @@ public class AiKnowledgeController extends BaseController {
 
     @Operation(summary = "获取知识分类")
     @GetMapping("/categories")
-    public R<List<String>> categories() {
-        return success(Arrays.asList("training", "recovery", "nutrition", "injury", "sleep"));
+    public R<List<Map<String, Object>>> categories() {
+        String[][] data = {
+                {"1", "训练相关", "training"},
+                {"2", "恢复相关", "recovery"},
+                {"3", "营养相关", "nutrition"},
+                {"4", "伤病相关", "injury"},
+                {"5", "睡眠相关", "sleep"},
+        };
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (String[] item : data) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", Integer.parseInt(item[0]));
+            map.put("name", item[1]);
+            map.put("code", item[2]);
+            list.add(map);
+        }
+        return success(list);
     }
 
     @Operation(summary = "保存知识")
