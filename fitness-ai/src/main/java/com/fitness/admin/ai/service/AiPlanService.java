@@ -17,7 +17,7 @@ public class AiPlanService {
         return aiPlanMapper.selectPage(page, null);
     }
 
-    public void updateStatus(Long id, Integer status) {
+    public void updateStatus(Long id, String status) {
         AiPlan plan = new AiPlan();
         plan.setId(id);
         plan.setStatus(status);

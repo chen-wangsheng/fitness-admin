@@ -13,7 +13,15 @@ public class AiPlan extends BaseEntity {
     private Long userId;
     private String prompt;
     private String response;
-    private Integer status;
+    private Long workoutPlanId;
+    private String goal;
+    private String availableEquipment;
+    private Integer daysPerWeek;
+    private String splitType;
+    private String generationParams;
+    private String explanation;
+    private Integer version;
     private Integer converted;
     private Long convertedPlanId;
+    private String status;
 }
