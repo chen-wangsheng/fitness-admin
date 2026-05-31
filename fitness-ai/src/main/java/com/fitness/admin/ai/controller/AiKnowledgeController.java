@@ -34,6 +34,12 @@ public class AiKnowledgeController extends BaseController {
         return page((Page) page);
     }
 
+    @Operation(summary = "知识详情")
+    @GetMapping("/{id}")
+    public R<KnowledgeBase> detail(@PathVariable Long id) {
+        return R.ok(aiKnowledgeService.getDetail(id));
+    }
+
     @Operation(summary = "获取知识分类")
     @GetMapping("/categories")
     public R<List<Map<String, Object>>> categories() {

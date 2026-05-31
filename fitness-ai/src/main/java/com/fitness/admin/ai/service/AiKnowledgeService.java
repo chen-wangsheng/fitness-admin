@@ -26,6 +26,10 @@ public class AiKnowledgeService {
         }
     }
 
+    public KnowledgeBase getDetail(Long id) {
+        return knowledgeBaseMapper.selectById(id);
+    }
+
     public void delete(Long id) {
         knowledgeBaseMapper.deleteById(id);
     }

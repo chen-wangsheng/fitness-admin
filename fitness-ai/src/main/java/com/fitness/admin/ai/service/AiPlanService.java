@@ -49,6 +49,7 @@ public class AiPlanService {
         workoutPlan.setDescription(aiPlan.getExplanation());
         workoutPlan.setFitnessGoal(aiPlan.getGoal());
         workoutPlan.setDaysPerWeek(aiPlan.getDaysPerWeek());
+        workoutPlan.setDurationWeeks(4);
         workoutPlan.setDifficultyLevel("intermediate");
         workoutPlan.setIsSystem(1);
         workoutPlan.setAiGenerated(1);

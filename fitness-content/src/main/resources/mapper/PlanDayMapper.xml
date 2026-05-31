@@ -4,7 +4,7 @@
 <mapper namespace="com.fitness.admin.content.mapper.PlanDayMapper">
 
     <select id="selectByPlanId" resultType="com.fitness.admin.content.entity.PlanDay">
-        SELECT * FROM plan_day WHERE plan_id = #{planId} ORDER BY week_number, day_number
+        SELECT * FROM plan_day WHERE plan_id = #{planId} ORDER BY week_number, day_of_week
     </select>
 
 </mapper>

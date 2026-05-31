@@ -17,7 +17,8 @@ public class PlanDay implements Serializable {
     private Long id;
     private Long planId;
     private Integer weekNumber;
-    private Integer dayNumber;
-    private String focus;
-    private String description;
+    private Integer dayOfWeek;
+    private String dayLabel;
+    private Integer isRestDay;
+    private Integer sortOrder;
 }
