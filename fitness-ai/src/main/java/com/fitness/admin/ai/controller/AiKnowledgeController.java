@@ -5,6 +5,7 @@ import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.ai.entity.KnowledgeBase;
+import com.fitness.admin.ai.service.AiAnalyticsService;
 import com.fitness.admin.ai.service.AiKnowledgeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "知识库管理")
 @RestController
@@ -21,6 +23,7 @@ import java.util.List;
 public class AiKnowledgeController extends BaseController {
 
     private final AiKnowledgeService aiKnowledgeService;
+    private final AiAnalyticsService aiAnalyticsService;
 
     @Operation(summary = "知识库列表")
     @GetMapping("/list")
@@ -48,5 +51,17 @@ public class AiKnowledgeController extends BaseController {
     public R<Void> delete(@PathVariable Long id) {
         aiKnowledgeService.delete(id);
         return success();
+    }
+
+    @Operation(summary = "知识使用统计")
+    @GetMapping("/analytics/usage")
+    public R<List<Map<String, Object>>> usage() {
+        return R.ok(aiAnalyticsService.getKnowledgeUsage());
+    }
+
+    @Operation(summary = "RAG命中率")
+    @GetMapping("/analytics/rag-hit-rate")
+    public R<List<Map<String, Object>>> ragHitRate() {
+        return R.ok(aiAnalyticsService.getRagHitRate());
     }
 }

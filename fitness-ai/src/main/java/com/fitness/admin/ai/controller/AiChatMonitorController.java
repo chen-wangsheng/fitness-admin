@@ -7,12 +7,14 @@ import com.fitness.admin.common.result.R;
 import com.fitness.admin.common.utils.SecurityUtil;
 import com.fitness.admin.ai.entity.AiChatMessage;
 import com.fitness.admin.ai.entity.AiChatSession;
+import com.fitness.admin.ai.service.AiAnalyticsService;
 import com.fitness.admin.ai.service.AiChatMonitorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @Tag(name = "AI对话监控")
@@ -22,6 +24,7 @@ import java.util.Map;
 public class AiChatMonitorController extends BaseController {
 
     private final AiChatMonitorService aiChatMonitorService;
+    private final AiAnalyticsService aiAnalyticsService;
 
     @Operation(summary = "会话列表")
     @GetMapping("/sessions")
@@ -79,5 +82,29 @@ public class AiChatMonitorController extends BaseController {
                                @PathVariable Long msgId) {
         aiChatMonitorService.markToKnowledge(sessionId, msgId);
         return R.ok();
+    }
+
+    @Operation(summary = "对话趋势")
+    @GetMapping("/analytics/chat-trend")
+    public R<List<Map<String, Object>>> chatTrend() {
+        return R.ok(aiAnalyticsService.getChatTrend());
+    }
+
+    @Operation(summary = "满意度趋势")
+    @GetMapping("/analytics/satisfaction-trend")
+    public R<List<Map<String, Object>>> satisfactionTrend() {
+        return R.ok(aiAnalyticsService.getSatisfactionTrend());
+    }
+
+    @Operation(summary = "热门问题")
+    @GetMapping("/analytics/hot-questions")
+    public R<List<Map<String, Object>>> hotQuestions() {
+        return R.ok(aiAnalyticsService.getHotQuestions());
+    }
+
+    @Operation(summary = "响应时间")
+    @GetMapping("/analytics/response-time")
+    public R<List<Map<String, Object>>> responseTime() {
+        return R.ok(aiAnalyticsService.getResponseTime());
     }
 }
