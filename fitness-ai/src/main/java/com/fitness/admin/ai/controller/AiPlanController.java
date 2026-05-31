@@ -78,6 +78,12 @@ public class AiPlanController extends BaseController {
         return R.ok(aiAnalyticsService.getPlanStats());
     }
 
+    @Operation(summary = "计划统计(前端)")
+    @GetMapping("/stats")
+    public R<Map<String, Object>> stats() {
+        return R.ok(aiAnalyticsService.getPlanStats());
+    }
+
     @Operation(summary = "Token用量")
     @GetMapping("/analytics/token-usage")
     public R<List<Map<String, Object>>> tokenUsage() {

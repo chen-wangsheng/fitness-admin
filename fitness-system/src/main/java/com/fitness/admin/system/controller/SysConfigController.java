@@ -9,7 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "系统配置")
 @RestController
@@ -18,6 +20,8 @@ import java.util.List;
 public class SysConfigController extends BaseController {
 
     private final SysConfigService sysConfigService;
+
+    private static final String AI_CONFIG_PREFIX = "ai.";
 
     @Operation(summary = "配置列表")
     @GetMapping("/list")
@@ -32,10 +36,52 @@ public class SysConfigController extends BaseController {
         return success();
     }
 
+    @Operation(summary = "按key更新配置")
+    @PutMapping("/{configKey}")
+    public R<Void> updateByKey(@PathVariable String configKey, @RequestBody Map<String, String> body) {
+        String configValue = body.get("configValue");
+        String description = body.get("description");
+        sysConfigService.saveByKey(configKey, configValue, description);
+        return success();
+    }
+
     @Operation(summary = "删除配置")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         sysConfigService.delete(id);
+        return success();
+    }
+
+    @Operation(summary = "获取AI配置")
+    @GetMapping("/ai-config")
+    public R<Map<String, String>> getAiConfig() {
+        List<SysConfig> configs = sysConfigService.listByKeyPrefix(AI_CONFIG_PREFIX);
+        Map<String, String> result = new LinkedHashMap<>();
+        for (SysConfig config : configs) {
+            // 去掉前缀 "ai." 返回给前端
+            String key = config.getConfigKey();
+            if (key.startsWith(AI_CONFIG_PREFIX)) {
+                key = key.substring(AI_CONFIG_PREFIX.length());
+            }
+            result.put(key, config.getConfigValue());
+        }
+        return success(result);
+    }
+
+    @Operation(summary = "更新AI配置")
+    @PutMapping("/ai-config")
+    public R<Void> updateAiConfig(@RequestBody Map<String, String> configMap) {
+        for (Map.Entry<String, String> entry : configMap.entrySet()) {
+            String fullKey = AI_CONFIG_PREFIX + entry.getKey();
+            sysConfigService.saveByKey(fullKey, entry.getValue(), null);
+        }
+        return success();
+    }
+
+    @Operation(summary = "测试AI连接")
+    @PostMapping("/ai-config/test-connection")
+    public R<Void> testAiConnection() {
+        // TODO: 实际测试LLM连接
         return success();
     }
 }
