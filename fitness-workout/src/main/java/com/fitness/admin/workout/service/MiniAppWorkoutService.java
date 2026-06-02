@@ -231,6 +231,67 @@ public class MiniAppWorkoutService {
     }
 
     /**
+     * 获取个人最佳记录列表
+     */
+    public List<PrRecordItem> getPrRecords() {
+        Long userId = getCurrentUserId();
+
+        // 1. 查询用户所有已完成的训练记录ID
+        LambdaQueryWrapper<WorkoutLog> logWrapper = new LambdaQueryWrapper<>();
+        logWrapper.eq(WorkoutLog::getUserId, userId)
+                  .eq(WorkoutLog::getStatus, "completed")
+                  .select(WorkoutLog::getId);
+        List<WorkoutLog> logs = workoutLogMapper.selectList(logWrapper);
+        if (logs.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> logIds = logs.stream().map(WorkoutLog::getId).toList();
+
+        // 2. 查询这些训练记录的所有动作记录
+        LambdaQueryWrapper<WorkoutLogExercise> exWrapper = new LambdaQueryWrapper<>();
+        exWrapper.in(WorkoutLogExercise::getWorkoutLogId, logIds)
+                 .select(WorkoutLogExercise::getId, WorkoutLogExercise::getExerciseId);
+        List<WorkoutLogExercise> exercises = workoutLogExerciseMapper.selectList(exWrapper);
+        if (exercises.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Map<Long, Long> logExerciseToExerciseMap = exercises.stream()
+                .collect(java.util.stream.Collectors.toMap(WorkoutLogExercise::getId, WorkoutLogExercise::getExerciseId));
+        List<Long> logExerciseIds = exercises.stream().map(WorkoutLogExercise::getId).toList();
+
+        // 3. 查询PR记录（is_pr=1）
+        LambdaQueryWrapper<WorkoutLogSet> setWrapper = new LambdaQueryWrapper<>();
+        setWrapper.in(WorkoutLogSet::getWorkoutLogExerciseId, logExerciseIds)
+                  .eq(WorkoutLogSet::getIsPr, 1)
+                  .isNotNull(WorkoutLogSet::getWeight);
+        List<WorkoutLogSet> prSets = workoutLogSetMapper.selectList(setWrapper);
+
+        // 4. 按动作分组，取最大重量
+        Map<Long, WorkoutLogSet> prMap = new java.util.HashMap<>();
+        for (WorkoutLogSet set : prSets) {
+            Long exerciseId = logExerciseToExerciseMap.get(set.getWorkoutLogExerciseId());
+            if (exerciseId == null) continue;
+            prMap.merge(exerciseId, set, (existing, current) ->
+                    current.getWeight().compareTo(existing.getWeight()) > 0 ? current : existing);
+        }
+
+        // 5. 构建响应（动作名称需要查询exercise表，这里先用ID）
+        List<PrRecordItem> result = new ArrayList<>();
+        for (Map.Entry<Long, WorkoutLogSet> entry : prMap.entrySet()) {
+            PrRecordItem item = new PrRecordItem();
+            item.setExerciseId(entry.getKey());
+            item.setExerciseName("动作#" + entry.getKey()); // TODO: 查询动作名称
+            item.setMaxWeight(entry.getValue().getWeight());
+            item.setReps(entry.getValue().getReps());
+            item.setAchievedDate(entry.getValue().getCreatedAt() != null ?
+                    entry.getValue().getCreatedAt().toLocalDate() : null);
+            result.add(item);
+        }
+
+        return result;
+    }
+
+    /**
      * 计算连续打卡天数
      */
     private int calculateStreakDays(Long userId) {

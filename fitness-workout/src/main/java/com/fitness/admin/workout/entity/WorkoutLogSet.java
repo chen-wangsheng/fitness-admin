@@ -23,5 +23,6 @@ public class WorkoutLogSet implements Serializable {
     private BigDecimal weight;
     private Integer duration;
     private Integer completed;
+    private Integer isPr;
     private LocalDateTime createdAt;
 }

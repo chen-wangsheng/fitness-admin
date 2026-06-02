@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 小程序训练记录接口
  */
@@ -56,5 +58,11 @@ public class MiniAppWorkoutController extends BaseController {
     public R<WorkoutStatsResponse> stats(
             @RequestParam(defaultValue = "week") String period) {
         return success(miniAppWorkoutService.getStats(period));
+    }
+
+    @Operation(summary = "个人最佳记录")
+    @GetMapping("/pr-records")
+    public R<List<PrRecordItem>> getPrRecords() {
+        return success(miniAppWorkoutService.getPrRecords());
     }
 }

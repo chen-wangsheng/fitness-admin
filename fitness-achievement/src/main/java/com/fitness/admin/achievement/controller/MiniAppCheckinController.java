@@ -38,4 +38,10 @@ public class MiniAppCheckinController extends BaseController {
     public R<StreakResponse> getStreak() {
         return success(miniAppCheckinService.getStreak());
     }
+
+    @Operation(summary = "成就列表")
+    @GetMapping("/achievements")
+    public R<AchievementListResponse> getAchievements() {
+        return success(miniAppCheckinService.getAchievements());
+    }
 }

@@ -2,8 +2,12 @@ package com.fitness.admin.achievement.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fitness.admin.achievement.dto.*;
+import com.fitness.admin.achievement.entity.Achievement;
 import com.fitness.admin.achievement.entity.Checkin;
+import com.fitness.admin.achievement.entity.UserAchievement;
+import com.fitness.admin.achievement.mapper.AchievementMapper;
 import com.fitness.admin.achievement.mapper.CheckinMapper;
+import com.fitness.admin.achievement.mapper.UserAchievementMapper;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * 小程序打卡服务
@@ -25,6 +28,8 @@ import java.util.List;
 public class MiniAppCheckinService {
 
     private final CheckinMapper checkinMapper;
+    private final AchievementMapper achievementMapper;
+    private final UserAchievementMapper userAchievementMapper;
 
     /**
      * 每日打卡
@@ -103,6 +108,57 @@ public class MiniAppCheckinService {
         response.setCheckinRate(days > 0 ? (double) checkedDays / days * 100 : 0);
         response.setDailyStats(dailyStats);
 
+        return response;
+    }
+
+    /**
+     * 获取成就列表
+     */
+    public AchievementListResponse getAchievements() {
+        Long userId = getCurrentUserId();
+
+        // 查询所有成就
+        List<Achievement> allAchievements = achievementMapper.selectList(null);
+
+        // 查询用户已解锁的成就
+        LambdaQueryWrapper<UserAchievement> uaWrapper = new LambdaQueryWrapper<>();
+        uaWrapper.eq(UserAchievement::getUserId, userId);
+        List<UserAchievement> unlocked = userAchievementMapper.selectList(uaWrapper);
+        Set<Long> unlockedIds = unlocked.stream()
+                .map(UserAchievement::getAchievementId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 按conditionType分组
+        Map<String, List<Achievement>> grouped = allAchievements.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        a -> a.getConditionType() != null ? a.getConditionType() : "other"));
+
+        List<Map<String, Object>> categories = new ArrayList<>();
+        for (Map.Entry<String, List<Achievement>> entry : grouped.entrySet()) {
+            Map<String, Object> category = new HashMap<>();
+            category.put("type", entry.getKey());
+            category.put("achievements", entry.getValue().stream().map(a -> {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", a.getId());
+                item.put("name", a.getName());
+                item.put("description", a.getDescription());
+                item.put("iconUrl", a.getIconUrl());
+                item.put("badgeColor", a.getBadgeColor());
+                item.put("unlocked", unlockedIds.contains(a.getId()));
+                return item;
+            }).toList());
+            categories.add(category);
+        }
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", allAchievements.size());
+        stats.put("unlocked", unlockedIds.size());
+        stats.put("progress", allAchievements.isEmpty() ? 0 :
+                (double) unlockedIds.size() / allAchievements.size() * 100);
+
+        AchievementListResponse response = new AchievementListResponse();
+        response.setCategories(categories);
+        response.setStats(stats);
         return response;
     }
 

@@ -38,6 +38,7 @@ sa-token:
   is-share: true
   token-style: uuid
   is-log: true
+  token-prefix: Bearer
 
 knife4j:
   enable: true
