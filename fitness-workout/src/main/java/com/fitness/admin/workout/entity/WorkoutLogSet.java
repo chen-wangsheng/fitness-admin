@@ -7,6 +7,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Data
 @TableName("workout_log_set")
@@ -22,4 +23,5 @@ public class WorkoutLogSet implements Serializable {
     private BigDecimal weight;
     private Integer duration;
     private Integer completed;
+    private LocalDateTime createdAt;
 }

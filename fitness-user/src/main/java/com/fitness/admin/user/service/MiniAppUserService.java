@@ -1,0 +1,201 @@
+package com.fitness.admin.user.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fitness.admin.common.exception.BizException;
+import com.fitness.admin.common.utils.SecurityUtil;
+import com.fitness.admin.user.dto.MiniAppLoginResponse;
+import com.fitness.admin.user.dto.MiniAppUserInfo;
+import com.fitness.admin.user.dto.UpdateProfileRequest;
+import com.fitness.admin.user.entity.User;
+import com.fitness.admin.user.entity.UserFitnessProfile;
+import com.fitness.admin.user.mapper.UserFitnessProfileMapper;
+import com.fitness.admin.user.mapper.UserMapper;
+import cn.dev33.satoken.stp.StpUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+/**
+ * 小程序用户服务
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MiniAppUserService {
+
+    private final UserMapper userMapper;
+    private final UserFitnessProfileMapper userFitnessProfileMapper;
+
+    // TODO: 注入微信配置和JWT工具
+    // private final WxMaService wxMaService;
+    // private final SaJwtUtil saJwtUtil;
+
+    /**
+     * 微信登录
+     */
+    public MiniAppLoginResponse wxLogin(String code) {
+        // 1. 用code换取openid
+        String openid = getOpenidByCode(code);
+
+        // 2. 查询或创建用户
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getOpenid, openid);
+        User user = userMapper.selectOne(wrapper);
+
+        if (user == null) {
+            user = new User();
+            user.setOpenid(openid);
+            user.setNickname("微信用户" + openid.substring(openid.length() - 6));
+            user.setGender(0);
+            user.setStatus(1);
+            user.setCreatedAt(LocalDateTime.now());
+            user.setUpdatedAt(LocalDateTime.now());
+            userMapper.insert(user);
+            log.info("新用户注册: userId={}, openid={}", user.getId(), openid);
+        }
+
+        // 3. 检查用户状态
+        if (user.getStatus() != 1) {
+            throw new BizException("账号已被禁用");
+        }
+
+        // 4. 使用Sa-Token登录
+        StpUtil.login(user.getId());
+        String token = StpUtil.getTokenValue();
+
+        // 5. 构建响应
+        MiniAppLoginResponse response = new MiniAppLoginResponse();
+        response.setToken(token);
+        response.setRefreshToken(token); // Sa-Token暂无独立refreshToken，使用相同token
+
+        MiniAppUserInfo userInfo = new MiniAppUserInfo();
+        userInfo.setId(user.getId());
+        userInfo.setNickname(user.getNickname());
+        userInfo.setAvatarUrl(user.getAvatarUrl());
+        userInfo.setGender(user.getGender());
+        userInfo.setFitnessGoal(user.getFitnessGoal());
+        userInfo.setFitnessLevel(user.getFitnessLevel());
+        userInfo.setCurrentPlanId(null); // TODO: 查询当前活跃计划
+        userInfo.setStatus(user.getStatus());
+        response.setUserInfo(userInfo);
+
+        return response;
+    }
+
+    /**
+     * 获取当前登录用户
+     */
+    public User getCurrentUser() {
+        Long userId = getCurrentUserId();
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+        return user;
+    }
+
+    /**
+     * 更新用户信息
+     */
+    public void updateProfile(UpdateProfileRequest request) {
+        Long userId = getCurrentUserId();
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+
+        if (request.getNickname() != null) {
+            user.setNickname(request.getNickname());
+        }
+        if (request.getAvatarUrl() != null) {
+            user.setAvatarUrl(request.getAvatarUrl());
+        }
+        if (request.getGender() != null) {
+            user.setGender(request.getGender());
+        }
+        if (request.getBirthday() != null) {
+            user.setBirthday(LocalDate.parse(request.getBirthday()));
+        }
+        if (request.getHeightCm() != null) {
+            user.setHeightCm(request.getHeightCm());
+        }
+        if (request.getCurrentWeightKg() != null) {
+            user.setCurrentWeightKg(request.getCurrentWeightKg());
+        }
+        if (request.getTargetWeightKg() != null) {
+            user.setTargetWeightKg(request.getTargetWeightKg());
+        }
+        if (request.getFitnessGoal() != null) {
+            user.setFitnessGoal(request.getFitnessGoal());
+        }
+        if (request.getFitnessLevel() != null) {
+            user.setFitnessLevel(request.getFitnessLevel());
+        }
+        if (request.getWorkoutDaysPerWeek() != null) {
+            user.setWorkoutDaysPerWeek(request.getWorkoutDaysPerWeek());
+        }
+        if (request.getWorkoutDurationMin() != null) {
+            user.setWorkoutDurationMin(request.getWorkoutDurationMin());
+        }
+
+        user.setUpdatedAt(LocalDateTime.now());
+        userMapper.updateById(user);
+    }
+
+    /**
+     * 获取健身画像
+     */
+    public UserFitnessProfile getFitnessProfile() {
+        Long userId = getCurrentUserId();
+        LambdaQueryWrapper<UserFitnessProfile> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserFitnessProfile::getUserId, userId);
+        return userFitnessProfileMapper.selectOne(wrapper);
+    }
+
+    /**
+     * 更新健身画像
+     */
+    public void updateFitnessProfile(UserFitnessProfile profile) {
+        Long userId = getCurrentUserId();
+        LambdaQueryWrapper<UserFitnessProfile> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserFitnessProfile::getUserId, userId);
+        UserFitnessProfile existing = userFitnessProfileMapper.selectOne(wrapper);
+
+        if (existing == null) {
+            profile.setUserId(userId);
+            profile.setCreatedAt(LocalDateTime.now());
+            profile.setUpdatedAt(LocalDateTime.now());
+            userFitnessProfileMapper.insert(profile);
+        } else {
+            profile.setId(existing.getId());
+            profile.setUserId(userId);
+            profile.setUpdatedAt(LocalDateTime.now());
+            userFitnessProfileMapper.updateById(profile);
+        }
+    }
+
+    /**
+     * 获取当前用户ID
+     */
+    private Long getCurrentUserId() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        if (userId == null) {
+            throw new BizException("请先登录");
+        }
+        return userId;
+    }
+
+    /**
+     * 通过微信code换取openid
+     */
+    private String getOpenidByCode(String code) {
+        // TODO: 替换为真实微信接口调用
+        // WxMaService wxMaService = ...;
+        // WxMaJscode2SessionResult result = wxMaService.getUserService().getSessionInfo(code);
+        // return result.getOpenid();
+        return "mock_openid_" + code;
+    }
+}

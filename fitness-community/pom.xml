@@ -21,6 +21,10 @@
             <artifactId>fitness-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.fitness.admin</groupId>
+            <artifactId>fitness-user</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
