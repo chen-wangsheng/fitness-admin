@@ -83,15 +83,24 @@ public class PlanService {
         if (createDTO.getDays() != null) {
             for (PlanCreateDTO.PlanDayDTO dayDTO : createDTO.getDays()) {
                 PlanDay day = new PlanDay();
-                BeanUtils.copyProperties(dayDTO, day);
                 day.setPlanId(plan.getId());
+                day.setWeekNumber(dayDTO.getWeekNumber());
+                day.setDayOfWeek(dayDTO.getDayNumber());
+                day.setDayLabel(dayDTO.getFocus());
+                day.setIsRestDay(dayDTO.getExercises() == null || dayDTO.getExercises().isEmpty() ? 1 : 0);
                 planDayMapper.insert(day);
 
                 if (dayDTO.getExercises() != null) {
-                    for (PlanCreateDTO.PlanExerciseDTO exDTO : dayDTO.getExercises()) {
+                    for (int i = 0; i < dayDTO.getExercises().size(); i++) {
+                        PlanCreateDTO.PlanExerciseDTO exDTO = dayDTO.getExercises().get(i);
                         PlanDayExercise exercise = new PlanDayExercise();
-                        BeanUtils.copyProperties(exDTO, exercise);
                         exercise.setPlanDayId(day.getId());
+                        exercise.setExerciseId(exDTO.getExerciseId());
+                        exercise.setSets(exDTO.getSets());
+                        exercise.setReps(exDTO.getReps());
+                        exercise.setDuration(exDTO.getDuration());
+                        exercise.setRestSeconds(exDTO.getRestSeconds());
+                        exercise.setSort(exDTO.getSort() != null ? exDTO.getSort() : i);
                         planDayExerciseMapper.insert(exercise);
                     }
                 }
