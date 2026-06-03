@@ -2,6 +2,7 @@ package com.fitness.admin.user.controller;
 
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
+import com.fitness.admin.user.dto.FeedbackRequest;
 import com.fitness.admin.user.dto.MiniAppLoginResponse;
 import com.fitness.admin.user.dto.UpdateProfileRequest;
 import com.fitness.admin.user.dto.WxLoginRequest;
@@ -54,6 +55,13 @@ public class MiniAppUserController extends BaseController {
     @PutMapping("/fitness-profile")
     public R<Void> updateFitnessProfile(@RequestBody UserFitnessProfile profile) {
         miniAppUserService.updateFitnessProfile(profile);
+        return success();
+    }
+
+    @Operation(summary = "意见反馈")
+    @PostMapping("/feedback")
+    public R<Void> submitFeedback(@Valid @RequestBody FeedbackRequest request) {
+        miniAppUserService.submitFeedback(request.getContent());
         return success();
     }
 }

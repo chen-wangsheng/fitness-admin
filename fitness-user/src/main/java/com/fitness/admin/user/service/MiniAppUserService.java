@@ -7,7 +7,9 @@ import com.fitness.admin.user.dto.MiniAppLoginResponse;
 import com.fitness.admin.user.dto.MiniAppUserInfo;
 import com.fitness.admin.user.dto.UpdateProfileRequest;
 import com.fitness.admin.user.entity.User;
+import com.fitness.admin.user.entity.UserFeedback;
 import com.fitness.admin.user.entity.UserFitnessProfile;
+import com.fitness.admin.user.mapper.UserFeedbackMapper;
 import com.fitness.admin.user.mapper.UserFitnessProfileMapper;
 import com.fitness.admin.user.mapper.UserMapper;
 import cn.dev33.satoken.stp.StpUtil;
@@ -28,6 +30,7 @@ public class MiniAppUserService {
 
     private final UserMapper userMapper;
     private final UserFitnessProfileMapper userFitnessProfileMapper;
+    private final UserFeedbackMapper userFeedbackMapper;
 
     // TODO: 注入微信配置和JWT工具
     // private final WxMaService wxMaService;
@@ -175,6 +178,18 @@ public class MiniAppUserService {
             profile.setUpdatedAt(LocalDateTime.now());
             userFitnessProfileMapper.updateById(profile);
         }
+    }
+
+    /**
+     * 提交意见反馈
+     */
+    public void submitFeedback(String content) {
+        Long userId = getCurrentUserId();
+        UserFeedback feedback = new UserFeedback();
+        feedback.setUserId(userId);
+        feedback.setContent(content);
+        feedback.setCreatedAt(LocalDateTime.now());
+        userFeedbackMapper.insert(feedback);
     }
 
     /**

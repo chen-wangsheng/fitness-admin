@@ -81,11 +81,12 @@ public class PlanService {
         planMapper.insert(plan);
 
         if (createDTO.getDays() != null) {
-            for (PlanCreateDTO.PlanDayDTO dayDTO : createDTO.getDays()) {
+            for (int dayIndex = 0; dayIndex < createDTO.getDays().size(); dayIndex++) {
+                PlanCreateDTO.PlanDayDTO dayDTO = createDTO.getDays().get(dayIndex);
                 PlanDay day = new PlanDay();
                 day.setPlanId(plan.getId());
                 day.setWeekNumber(dayDTO.getWeekNumber());
-                day.setDayOfWeek(dayDTO.getDayNumber());
+                day.setDayOfWeek(dayDTO.getDayNumber() != null ? dayDTO.getDayNumber() : (dayIndex % 7) + 1);
                 day.setDayLabel(dayDTO.getFocus());
                 day.setIsRestDay(dayDTO.getExercises() == null || dayDTO.getExercises().isEmpty() ? 1 : 0);
                 planDayMapper.insert(day);
