@@ -8,7 +8,7 @@ import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.user.entity.UserFitnessProfile;
-import com.fitness.admin.user.mapper.UserAchievementMapper;
+import com.fitness.admin.user.mapper.UserAchievementQueryMapper;
 import com.fitness.admin.user.mapper.UserFitnessProfileMapper;
 import com.fitness.admin.workout.entity.WorkoutLog;
 import com.fitness.admin.workout.mapper.WorkoutLogMapper;
@@ -27,7 +27,7 @@ import java.util.Map;
 public class UserDetailController extends BaseController {
 
     private final WorkoutLogMapper workoutLogMapper;
-    private final UserAchievementMapper userAchievementMapper;
+    private final UserAchievementQueryMapper userAchievementQueryMapper;
     private final UserFitnessProfileMapper userFitnessProfileMapper;
     private final AiChatSessionMapper aiChatSessionMapper;
 
@@ -45,7 +45,7 @@ public class UserDetailController extends BaseController {
     @Operation(summary = "用户成就列表")
     @GetMapping("/{id}/achievements")
     public R<List<Map<String, Object>>> userAchievements(@PathVariable Long id) {
-        return success(userAchievementMapper.selectByUserId(id));
+        return success(userAchievementQueryMapper.selectByUserId(id));
     }
 
     @Operation(summary = "用户AI健身档案")
