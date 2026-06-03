@@ -12,6 +12,13 @@ spring:
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
 
+wx:
+  miniapp:
+    appid: ${WX_APPID}
+    secret: ${WX_SECRET}
+    token: ${WX_TOKEN:}
+    aes-key: ${WX_AES_KEY:}
+
 logging:
   level:
     com.fitness.admin: info

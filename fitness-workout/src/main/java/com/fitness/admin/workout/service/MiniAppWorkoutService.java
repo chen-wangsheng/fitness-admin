@@ -180,28 +180,30 @@ public class MiniAppWorkoutService {
     public WorkoutStatsResponse getStats(String period) {
         Long userId = getCurrentUserId();
 
-        // 计算日期范围
-        LocalDate startDate;
-        LocalDate endDate = LocalDate.now();
-        switch (period) {
-            case "month":
-                startDate = endDate.withDayOfMonth(1);
-                break;
-            case "year":
-                startDate = endDate.withDayOfYear(1);
-                break;
-            case "week":
-            default:
-                startDate = endDate.minusDays(endDate.getDayOfWeek().getValue() - 1);
-                break;
-        }
-
         // 查询训练记录
         LambdaQueryWrapper<WorkoutLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(WorkoutLog::getUserId, userId)
-               .eq(WorkoutLog::getStatus, "completed")
-               .ge(WorkoutLog::getWorkoutDate, startDate)
-               .le(WorkoutLog::getWorkoutDate, endDate);
+               .eq(WorkoutLog::getStatus, "completed");
+
+        // 计算日期范围（all不筛选时间）
+        LocalDate endDate = LocalDate.now();
+        if (!"all".equals(period)) {
+            LocalDate startDate;
+            switch (period) {
+                case "month":
+                    startDate = endDate.withDayOfMonth(1);
+                    break;
+                case "year":
+                    startDate = endDate.withDayOfYear(1);
+                    break;
+                case "week":
+                default:
+                    startDate = endDate.minusDays(endDate.getDayOfWeek().getValue() - 1);
+                    break;
+            }
+            wrapper.ge(WorkoutLog::getWorkoutDate, startDate);
+        }
+        wrapper.le(WorkoutLog::getWorkoutDate, endDate);
         List<WorkoutLog> logs = workoutLogMapper.selectList(wrapper);
 
         // 统计数据
@@ -295,8 +297,44 @@ public class MiniAppWorkoutService {
      * 计算连续打卡天数
      */
     private int calculateStreakDays(Long userId) {
-        // TODO: 实现连续打卡天数计算
-        return 0;
+        // 查询用户所有已完成训练的日期（去重，倒序）
+        LambdaQueryWrapper<WorkoutLog> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(WorkoutLog::getUserId, userId)
+               .eq(WorkoutLog::getStatus, "completed")
+               .select(WorkoutLog::getWorkoutDate)
+               .groupBy(WorkoutLog::getWorkoutDate)
+               .orderByDesc(WorkoutLog::getWorkoutDate);
+        List<WorkoutLog> logs = workoutLogMapper.selectList(wrapper);
+
+        if (logs.isEmpty()) {
+            return 0;
+        }
+
+        int streak = 0;
+        LocalDate expected = LocalDate.now();
+
+        for (WorkoutLog log : logs) {
+            LocalDate workoutDate = log.getWorkoutDate();
+            if (workoutDate.equals(expected)) {
+                streak++;
+                expected = expected.minusDays(1);
+            } else if (workoutDate.isBefore(expected)) {
+                // 如果今天还没有训练记录，从昨天开始算
+                if (streak == 0 && expected.equals(LocalDate.now())) {
+                    expected = workoutDate.plusDays(1);
+                    if (workoutDate.equals(expected.minusDays(1))) {
+                        streak++;
+                        expected = expected.minusDays(1);
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return streak;
     }
 
     /**

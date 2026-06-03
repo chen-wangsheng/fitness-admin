@@ -42,6 +42,7 @@
         <openai.version>0.21.0</openai.version>
         <milvus.version>2.4.0</milvus.version>
         <cos-api.version>5.6.213</cos-api.version>
+        <wxjava.version>4.7.5.B</wxjava.version>
         <lombok.version>1.18.30</lombok.version>
     </properties>
 
@@ -122,6 +123,12 @@
                 <groupId>com.qcloud</groupId>
                 <artifactId>cos_api</artifactId>
                 <version>${cos-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.binarywang</groupId>
+                <artifactId>wx-java-miniapp-spring-boot-starter</artifactId>
+                <version>${wxjava.version}</version>
             </dependency>
 
             <dependency>

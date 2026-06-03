@@ -12,9 +12,12 @@ import com.fitness.admin.user.entity.UserFitnessProfile;
 import com.fitness.admin.user.mapper.UserFeedbackMapper;
 import com.fitness.admin.user.mapper.UserFitnessProfileMapper;
 import com.fitness.admin.user.mapper.UserMapper;
+import cn.binarywang.wx.miniapp.api.WxMaService;
+import cn.binarywang.wx.miniapp.bean.WxMaJscode2SessionResult;
 import cn.dev33.satoken.stp.StpUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.chanjar.weixin.common.error.WxErrorException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -31,10 +34,7 @@ public class MiniAppUserService {
     private final UserMapper userMapper;
     private final UserFitnessProfileMapper userFitnessProfileMapper;
     private final UserFeedbackMapper userFeedbackMapper;
-
-    // TODO: 注入微信配置和JWT工具
-    // private final WxMaService wxMaService;
-    // private final SaJwtUtil saJwtUtil;
+    private final WxMaService wxMaService;
 
     /**
      * 微信登录
@@ -207,10 +207,12 @@ public class MiniAppUserService {
      * 通过微信code换取openid
      */
     private String getOpenidByCode(String code) {
-        // TODO: 替换为真实微信接口调用
-        // WxMaService wxMaService = ...;
-        // WxMaJscode2SessionResult result = wxMaService.getUserService().getSessionInfo(code);
-        // return result.getOpenid();
-        return "mock_openid_" + code;
+        try {
+            WxMaJscode2SessionResult result = wxMaService.getUserService().getSessionInfo(code);
+            return result.getOpenid();
+        } catch (WxErrorException e) {
+            log.error("微信登录失败: {}", e.getMessage(), e);
+            throw new BizException("微信登录失败: " + e.getError().getErrorMsg());
+        }
     }
 }

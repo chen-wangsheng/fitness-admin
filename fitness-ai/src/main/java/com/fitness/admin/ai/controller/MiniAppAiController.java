@@ -10,9 +10,9 @@ import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * 小程序AI接口
@@ -25,10 +25,10 @@ public class MiniAppAiController extends BaseController {
 
     private final MiniAppAiService miniAppAiService;
 
-    @Operation(summary = "发送AI对话消息(SSE)")
+    @Operation(summary = "发送AI对话消息")
     @PostMapping("/chat/send")
-    public SseEmitter sendChatMessage(@RequestBody ChatRequest request) {
-        return miniAppAiService.sendChatMessage(request);
+    public R<ChatResponse> sendChatMessage(@Valid @RequestBody ChatRequest request) {
+        return success(miniAppAiService.sendChatMessage(request));
     }
 
     @Operation(summary = "会话消息列表")

@@ -16,13 +16,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * 小程序AI服务
@@ -38,14 +34,11 @@ public class MiniAppAiService {
 
     // TODO: 注入AI调用服务
     // private final AiChatService aiChatService;
-    // private final AiPlanGeneratorService aiPlanGeneratorService;
-
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     /**
-     * 发送AI对话消息(SSE)
+     * 发送AI对话消息
      */
-    public SseEmitter sendChatMessage(ChatRequest request) {
+    public ChatResponse sendChatMessage(ChatRequest request) {
         Long userId = getCurrentUserId();
 
         // 创建或获取会话
@@ -75,54 +68,29 @@ public class MiniAppAiService {
         session.setUpdatedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
 
-        // 创建SSE发射器
-        SseEmitter emitter = new SseEmitter(60000L); // 60秒超时
+        // TODO: 调用AI服务获取响应，这里模拟AI响应
+        String aiResponse = "这是一个模拟的AI响应。实际应调用LLM服务。";
 
-        // 异步处理AI响应
-        executorService.execute(() -> {
-            try {
-                // TODO: 调用AI服务获取响应
-                // 这里模拟AI响应
-                String aiResponse = "这是一个模拟的AI响应。实际应调用LLM服务。";
+        // 保存AI消息
+        AiChatMessage aiMessage = new AiChatMessage();
+        aiMessage.setSessionId(session.getId());
+        aiMessage.setRole("assistant");
+        aiMessage.setContent(aiResponse);
+        aiMessage.setTokenCount(aiResponse.length());
+        aiMessage.setCreatedAt(LocalDateTime.now());
+        messageMapper.insert(aiMessage);
 
-                // 保存AI消息
-                AiChatMessage aiMessage = new AiChatMessage();
-                aiMessage.setSessionId(session.getId());
-                aiMessage.setRole("assistant");
-                aiMessage.setContent(aiResponse);
-                aiMessage.setTokenCount(aiResponse.length()); // 简单估算
-                aiMessage.setCreatedAt(LocalDateTime.now());
-                messageMapper.insert(aiMessage);
+        // 更新会话消息数
+        session.setMessageCount(session.getMessageCount() + 1);
+        session.setUpdatedAt(LocalDateTime.now());
+        sessionMapper.updateById(session);
 
-                // 更新会话消息数
-                session.setMessageCount(session.getMessageCount() + 1);
-                session.setUpdatedAt(LocalDateTime.now());
-                sessionMapper.updateById(session);
-
-                // 发送SSE事件
-                emitter.send(SseEmitter.event()
-                        .name("message")
-                        .data(Map.of(
-                                "type", "content",
-                                "content", aiResponse
-                        )));
-
-                emitter.send(SseEmitter.event()
-                        .name("complete")
-                        .data(Map.of(
-                                "type", "end",
-                                "messageId", aiMessage.getId(),
-                                "tokenCount", aiMessage.getTokenCount()
-                        )));
-
-                emitter.complete();
-            } catch (Exception e) {
-                log.error("AI对话处理失败", e);
-                emitter.completeWithError(e);
-            }
-        });
-
-        return emitter;
+        ChatResponse response = new ChatResponse();
+        response.setSessionId(session.getId());
+        response.setMessageId(aiMessage.getId());
+        response.setContent(aiResponse);
+        response.setTokenCount(aiMessage.getTokenCount());
+        return response;
     }
 
     /**
