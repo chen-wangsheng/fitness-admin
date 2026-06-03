@@ -14,8 +14,8 @@ public class ExerciseVO {
     private String name;
     private String nameEn;
     private String description;
-    private String instructions;
-    private String tips;
+    private List<String> instructions;
+    private List<String> tips;
     private String demoImageUrl;
     private String demoVideoUrl;
     private String exerciseType;

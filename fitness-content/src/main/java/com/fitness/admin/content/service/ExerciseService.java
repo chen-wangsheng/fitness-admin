@@ -13,11 +13,14 @@ import com.fitness.admin.content.mapper.ExerciseMapper;
 import com.fitness.admin.content.vo.BodyPartVO;
 import com.fitness.admin.content.vo.ExerciseVO;
 import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -108,9 +111,13 @@ public class ExerciseService {
         exerciseMapper.deleteById(id);
     }
 
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     private ExerciseVO convertToVO(Exercise exercise) {
         ExerciseVO vo = new ExerciseVO();
         BeanUtils.copyProperties(exercise, vo);
+        vo.setInstructions(parseJsonList(exercise.getInstructions()));
+        vo.setTips(parseJsonList(exercise.getTips()));
         List<BodyPart> bodyParts = bodyPartMapper.selectByExerciseId(exercise.getId());
         vo.setBodyParts(bodyParts.stream().map(bp -> {
             BodyPartVO bpVO = new BodyPartVO();
@@ -120,5 +127,16 @@ public class ExerciseService {
             return bpVO;
         }).collect(Collectors.toList()));
         return vo;
+    }
+
+    private List<String> parseJsonList(String json) {
+        if (!StringUtils.hasText(json)) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 }

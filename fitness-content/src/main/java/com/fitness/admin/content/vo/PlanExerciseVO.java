@@ -9,7 +9,7 @@ public class PlanExerciseVO {
     private Long exerciseId;
     private String exerciseName;
     private Integer sets;
-    private Integer reps;
+    private String reps;
     private Integer duration;
     private Integer restSeconds;
     private Integer sort;

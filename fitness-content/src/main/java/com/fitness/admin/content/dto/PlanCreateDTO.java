@@ -31,7 +31,7 @@ public class PlanCreateDTO {
     public static class PlanExerciseDTO {
         private Long exerciseId;
         private Integer sets;
-        private Integer reps;
+        private String reps;
         private Integer duration;
         private Integer restSeconds;
         private Integer sort;
