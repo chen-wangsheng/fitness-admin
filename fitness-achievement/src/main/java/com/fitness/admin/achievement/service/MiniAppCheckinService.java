@@ -224,7 +224,7 @@ public class MiniAppCheckinService {
     private Long getCurrentUserId() {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
-            throw new BizException("请先登录");
+            throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
     }

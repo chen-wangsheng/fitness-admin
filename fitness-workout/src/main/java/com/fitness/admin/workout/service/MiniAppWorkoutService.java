@@ -2,6 +2,7 @@ package com.fitness.admin.workout.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.utils.SecurityUtil;
@@ -343,7 +344,7 @@ public class MiniAppWorkoutService {
     private Long getCurrentUserId() {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
-            throw new BizException("请先登录");
+            throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
     }

@@ -1,6 +1,7 @@
 package com.fitness.admin.content.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.utils.SecurityUtil;
 import com.fitness.admin.content.dto.*;
@@ -114,7 +115,7 @@ public class MiniAppExerciseService {
     private Long getCurrentUserId() {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
-            throw new BizException("请先登录");
+            throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
     }

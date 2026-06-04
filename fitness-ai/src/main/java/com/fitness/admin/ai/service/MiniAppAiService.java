@@ -9,6 +9,7 @@ import com.fitness.admin.ai.entity.AiPlan;
 import com.fitness.admin.ai.mapper.AiChatMessageMapper;
 import com.fitness.admin.ai.mapper.AiChatSessionMapper;
 import com.fitness.admin.ai.mapper.AiPlanMapper;
+import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.utils.SecurityUtil;
@@ -268,7 +269,7 @@ public class MiniAppAiService {
     private Long getCurrentUserId() {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
-            throw new BizException("请先登录");
+            throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
     }
