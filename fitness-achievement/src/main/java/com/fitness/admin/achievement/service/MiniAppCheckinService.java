@@ -8,6 +8,7 @@ import com.fitness.admin.achievement.entity.UserAchievement;
 import com.fitness.admin.achievement.mapper.AchievementMapper;
 import com.fitness.admin.achievement.mapper.CheckinMapper;
 import com.fitness.admin.achievement.mapper.UserAchievementMapper;
+import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,7 @@ public class MiniAppCheckinService {
                .eq(Checkin::getCheckinDate, today);
         Long count = checkinMapper.selectCount(wrapper);
         if (count > 0) {
-            throw new BizException("今天已经打过卡了");
+            throw new BizException(ResultCodeEnum.CHECKIN_ALREADY_DONE);
         }
 
         // 创建打卡记录

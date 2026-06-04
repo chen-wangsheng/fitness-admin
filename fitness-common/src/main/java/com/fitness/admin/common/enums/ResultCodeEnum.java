@@ -30,6 +30,8 @@ public enum ResultCodeEnum {
     AI_SERVICE_ERROR(5001, "AI服务异常"),
     VECTOR_DB_ERROR(5002, "向量数据库异常"),
 
+    CHECKIN_ALREADY_DONE(6001, "今天已经打过卡了"),
+
     RATE_LIMIT(9001, "请求过于频繁"),
     SYSTEM_ERROR(9999, "系统异常");
 

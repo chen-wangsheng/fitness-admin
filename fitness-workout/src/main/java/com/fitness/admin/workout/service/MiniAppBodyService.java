@@ -60,6 +60,35 @@ public class MiniAppBodyService {
             }
         }
 
+        // 获取最近90天的趋势数据
+        LocalDate startDate = LocalDate.now().minusDays(90);
+        LambdaQueryWrapper<BodyMetric> trendWrapper = new LambdaQueryWrapper<>();
+        trendWrapper.eq(BodyMetric::getUserId, userId)
+                   .ge(BodyMetric::getRecordDate, startDate)
+                   .orderByAsc(BodyMetric::getRecordDate);
+        List<BodyMetric> trendRecords = bodyMetricMapper.selectList(trendWrapper);
+
+        List<BodyStatsResponse.TrendItem> weightTrend = new ArrayList<>();
+        List<BodyStatsResponse.TrendItem> fatTrend = new ArrayList<>();
+        List<BodyStatsResponse.TrendItem> muscleTrend = new ArrayList<>();
+        List<BodyStatsResponse.TrendItem> bmiTrend = new ArrayList<>();
+
+        for (BodyMetric record : trendRecords) {
+            String date = record.getRecordDate().toString();
+            if (record.getWeightKg() != null) {
+                weightTrend.add(new BodyStatsResponse.TrendItem(date, record.getWeightKg()));
+            }
+            if (record.getBodyFatPct() != null) {
+                fatTrend.add(new BodyStatsResponse.TrendItem(date, record.getBodyFatPct()));
+            }
+            if (record.getMuscleMassKg() != null) {
+                muscleTrend.add(new BodyStatsResponse.TrendItem(date, record.getMuscleMassKg()));
+            }
+            if (record.getBmi() != null) {
+                bmiTrend.add(new BodyStatsResponse.TrendItem(date, record.getBmi()));
+            }
+        }
+
         BodyStatsResponse response = new BodyStatsResponse();
         response.setCurrentWeight(latest != null ? latest.getWeightKg() : null);
         response.setTargetWeight(targetWeight);
@@ -67,6 +96,10 @@ public class MiniAppBodyService {
         response.setBodyFatPct(latest != null ? latest.getBodyFatPct() : null);
         response.setBmi(latest != null ? latest.getBmi() : null);
         response.setMilestones(new ArrayList<>());
+        response.setWeightTrend(weightTrend);
+        response.setFatTrend(fatTrend);
+        response.setMuscleTrend(muscleTrend);
+        response.setBmiTrend(bmiTrend);
 
         return response;
     }
@@ -106,8 +139,22 @@ public class MiniAppBodyService {
             }
         }
 
-        bodyMetricMapper.insert(metric);
-        log.info("用户{}记录身体数据", userId);
+        // 检查今天是否已有记录，有则更新，无则插入
+        LambdaQueryWrapper<BodyMetric> existWrapper = new LambdaQueryWrapper<>();
+        existWrapper.eq(BodyMetric::getUserId, userId)
+                   .eq(BodyMetric::getRecordDate, metric.getRecordDate());
+        BodyMetric existRecord = bodyMetricMapper.selectOne(existWrapper);
+
+        if (existRecord != null) {
+            metric.setId(existRecord.getId());
+            metric.setCreatedAt(existRecord.getCreatedAt());
+            metric.setUpdatedAt(LocalDateTime.now());
+            bodyMetricMapper.updateById(metric);
+            log.info("用户{}更新身体数据", userId);
+        } else {
+            bodyMetricMapper.insert(metric);
+            log.info("用户{}记录身体数据", userId);
+        }
     }
 
     /**
