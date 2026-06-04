@@ -6,6 +6,8 @@ import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.utils.SecurityUtil;
+import com.fitness.admin.user.entity.User;
+import com.fitness.admin.user.mapper.UserMapper;
 import com.fitness.admin.workout.dto.*;
 import com.fitness.admin.workout.entity.WorkoutLog;
 import com.fitness.admin.workout.entity.WorkoutLogExercise;
@@ -38,6 +40,7 @@ public class MiniAppWorkoutService {
     private final WorkoutLogMapper workoutLogMapper;
     private final WorkoutLogExerciseMapper workoutLogExerciseMapper;
     private final WorkoutLogSetMapper workoutLogSetMapper;
+    private final UserMapper userMapper;
 
     /**
      * 开始训练
@@ -45,6 +48,15 @@ public class MiniAppWorkoutService {
     @Transactional
     public StartWorkoutResponse startWorkout(StartWorkoutRequest request) {
         Long userId = getCurrentUserId();
+
+        // 如果指定了计划，更新用户的当前活跃计划
+        if (request.getPlanId() != null) {
+            User user = userMapper.selectById(userId);
+            if (user != null && !request.getPlanId().equals(user.getCurrentPlanId())) {
+                user.setCurrentPlanId(request.getPlanId());
+                userMapper.updateById(user);
+            }
+        }
 
         // 创建训练记录
         WorkoutLog workoutLog = new WorkoutLog();
