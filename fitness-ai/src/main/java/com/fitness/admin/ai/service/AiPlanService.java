@@ -8,8 +8,11 @@ import com.fitness.admin.ai.entity.PlanLoadAdjustment;
 import com.fitness.admin.ai.mapper.AiAdjustmentConfigMapper;
 import com.fitness.admin.ai.mapper.AiPlanMapper;
 import com.fitness.admin.ai.mapper.PlanLoadAdjustmentMapper;
+import com.fitness.admin.common.utils.SecurityUtil;
 import com.fitness.admin.content.entity.WorkoutPlan;
 import com.fitness.admin.content.mapper.PlanMapper;
+import com.fitness.admin.user.entity.User;
+import com.fitness.admin.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,7 @@ public class AiPlanService {
     private final PlanMapper planMapper;
     private final PlanLoadAdjustmentMapper planLoadAdjustmentMapper;
     private final AiAdjustmentConfigMapper aiAdjustmentConfigMapper;
+    private final UserMapper userMapper;
 
     public Page<AiPlan> queryPage(Integer pageNum, Integer pageSize) {
         Page<AiPlan> page = new Page<>(pageNum, pageSize);
@@ -63,6 +67,16 @@ public class AiPlanService {
         update.setConvertedPlanId(workoutPlan.getId());
         update.setStatus("confirmed");
         aiPlanMapper.updateById(update);
+
+        // 更新用户的当前活跃计划
+        Long userId = aiPlan.getUserId();
+        if (userId != null) {
+            User user = userMapper.selectById(userId);
+            if (user != null) {
+                user.setCurrentPlanId(workoutPlan.getId());
+                userMapper.updateById(user);
+            }
+        }
 
         return workoutPlan.getId();
     }

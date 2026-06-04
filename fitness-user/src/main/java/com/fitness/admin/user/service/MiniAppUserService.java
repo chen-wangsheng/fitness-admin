@@ -82,7 +82,7 @@ public class MiniAppUserService {
         userInfo.setGender(user.getGender());
         userInfo.setFitnessGoal(user.getFitnessGoal());
         userInfo.setFitnessLevel(user.getFitnessLevel());
-        userInfo.setCurrentPlanId(null); // TODO: 查询当前活跃计划
+        userInfo.setCurrentPlanId(user.getCurrentPlanId());
         userInfo.setStatus(user.getStatus());
         response.setUserInfo(userInfo);
 

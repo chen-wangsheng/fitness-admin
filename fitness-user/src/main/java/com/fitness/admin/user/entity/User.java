@@ -26,5 +26,6 @@ public class User extends BaseEntity {
     private String fitnessLevel;
     private Integer workoutDaysPerWeek;
     private Integer workoutDurationMin;
+    private Long currentPlanId;
     private Integer status;
 }
