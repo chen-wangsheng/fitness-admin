@@ -161,14 +161,113 @@ public class MiniAppBodyService {
     /**
      * 获取里程碑列表
      */
-    public List<Milestone> getMilestones() {
+    public MilestoneResponse getMilestones() {
         Long userId = getCurrentUserId();
         List<Milestone> milestones = new ArrayList<>();
 
-        // TODO: 实现里程碑逻辑
-        // 例如：首次记录、达到目标体重、连续记录7天等
+        // 获取用户信息
+        User user = userMapper.selectById(userId);
+        BigDecimal targetWeight = user != null ? user.getTargetWeightKg() : null;
 
-        return milestones;
+        // 获取所有记录，按日期排序
+        LambdaQueryWrapper<BodyMetric> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(BodyMetric::getUserId, userId)
+               .orderByAsc(BodyMetric::getRecordDate);
+        List<BodyMetric> records = bodyMetricMapper.selectList(wrapper);
+
+        int totalDays = records.size();
+        BigDecimal latestWeight = !records.isEmpty() ? records.get(records.size() - 1).getWeightKg() : null;
+
+        // 首次记录里程碑
+        if (!records.isEmpty()) {
+            BodyMetric first = records.get(0);
+            Milestone m = new Milestone();
+            m.setType("first_record");
+            m.setTitle("初次记录");
+            m.setDescription("开始记录身体数据，迈出第一步！");
+            m.setAchievedAt(first.getRecordDate().toString());
+            milestones.add(m);
+        }
+
+        // 连续记录里程碑
+        if (totalDays >= 7) {
+            Milestone m = new Milestone();
+            m.setType("streak_7");
+            m.setTitle("坚持7天");
+            m.setDescription("连续记录7天，养成好习惯！");
+            m.setAchievedAt(records.get(6).getRecordDate().toString());
+            milestones.add(m);
+        }
+        if (totalDays >= 30) {
+            Milestone m = new Milestone();
+            m.setType("streak_30");
+            m.setTitle("坚持30天");
+            m.setDescription("连续记录30天，你真的很棒！");
+            m.setAchievedAt(records.get(29).getRecordDate().toString());
+            milestones.add(m);
+        }
+        if (totalDays >= 100) {
+            Milestone m = new Milestone();
+            m.setType("streak_100");
+            m.setTitle("百日坚持");
+            m.setDescription("记录100天，这是了不起的成就！");
+            m.setAchievedAt(records.get(99).getRecordDate().toString());
+            milestones.add(m);
+        }
+
+        // 体重变化里程碑（从首次到最新）
+        if (records.size() >= 2) {
+            BigDecimal firstWeight = records.get(0).getWeightKg();
+            if (firstWeight != null && latestWeight != null) {
+                BigDecimal change = latestWeight.subtract(firstWeight).abs();
+
+                if (change.compareTo(BigDecimal.valueOf(1)) >= 0) {
+                    Milestone m = new Milestone();
+                    m.setType("weight_change_1kg");
+                    m.setTitle("变化1公斤");
+                    m.setDescription("体重变化了1公斤，继续加油！");
+                    m.setAchievedAt(records.get(records.size() - 1).getRecordDate().toString());
+                    milestones.add(m);
+                }
+                if (change.compareTo(BigDecimal.valueOf(5)) >= 0) {
+                    Milestone m = new Milestone();
+                    m.setType("weight_change_5kg");
+                    m.setTitle("变化5公斤");
+                    m.setDescription("体重变化了5公斤，效果显著！");
+                    m.setAchievedAt(records.get(records.size() - 1).getRecordDate().toString());
+                    milestones.add(m);
+                }
+                if (change.compareTo(BigDecimal.valueOf(10)) >= 0) {
+                    Milestone m = new Milestone();
+                    m.setType("weight_change_10kg");
+                    m.setTitle("变化10公斤");
+                    m.setDescription("体重变化了10公斤，太厉害了！");
+                    m.setAchievedAt(records.get(records.size() - 1).getRecordDate().toString());
+                    milestones.add(m);
+                }
+            }
+        }
+
+        // 达到目标体重里程碑
+        if (latestWeight != null && targetWeight != null) {
+            BigDecimal diff = latestWeight.subtract(targetWeight).abs();
+            if (diff.compareTo(BigDecimal.valueOf(1)) <= 0) {
+                Milestone m = new Milestone();
+                m.setType("target_reached");
+                m.setTitle("达成目标");
+                m.setDescription("恭喜你达到目标体重！");
+                m.setAchievedAt(records.get(records.size() - 1).getRecordDate().toString());
+                milestones.add(m);
+            }
+        }
+
+        MilestoneResponse response = new MilestoneResponse();
+        response.setMilestones(milestones);
+        response.setTotalDays(totalDays);
+        response.setLatestWeight(latestWeight);
+        response.setTargetWeight(targetWeight);
+
+        return response;
     }
 
     /**

@@ -3,7 +3,7 @@ package com.fitness.admin.workout.controller;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.workout.dto.BodyStatsResponse;
-import com.fitness.admin.workout.dto.Milestone;
+import com.fitness.admin.workout.dto.MilestoneResponse;
 import com.fitness.admin.workout.dto.RecordBodyRequest;
 import com.fitness.admin.workout.service.MiniAppBodyService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,7 +39,7 @@ public class MiniAppBodyController extends BaseController {
 
     @Operation(summary = "里程碑列表")
     @GetMapping("/milestones")
-    public R<List<Milestone>> getMilestones() {
+    public R<MilestoneResponse> getMilestones() {
         return success(miniAppBodyService.getMilestones());
     }
 
