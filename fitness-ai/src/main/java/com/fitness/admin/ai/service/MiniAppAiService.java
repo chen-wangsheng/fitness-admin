@@ -33,8 +33,7 @@ public class MiniAppAiService {
     private final AiChatMessageMapper messageMapper;
     private final AiPlanMapper planMapper;
 
-    // TODO: 注入AI调用服务
-    // private final AiChatService aiChatService;
+    private final AiService aiService;
 
     /**
      * 发送AI对话消息
@@ -69,8 +68,17 @@ public class MiniAppAiService {
         session.setUpdatedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
 
-        // TODO: 调用AI服务获取响应，这里模拟AI响应
-        String aiResponse = "这是一个模拟的AI响应。实际应调用LLM服务。";
+        // 获取历史消息用于上下文
+        List<AiService.ChatMessage> chatMessages = buildChatMessages(session.getId());
+
+        // 调用AI服务获取响应
+        String aiResponse;
+        try {
+            aiResponse = aiService.chat(chatMessages);
+        } catch (Exception e) {
+            log.error("AI服务调用失败，使用备用响应", e);
+            aiResponse = "抱歉，AI服务暂时不可用，请稍后再试。错误信息：" + e.getMessage();
+        }
 
         // 保存AI消息
         AiChatMessage aiMessage = new AiChatMessage();
@@ -128,6 +136,32 @@ public class MiniAppAiService {
         Page<AiChatSession> result = sessionMapper.selectPage(page, wrapper);
 
         return PageResult.of(result);
+    }
+
+    /**
+     * 构建聊天消息列表（用于发送给AI服务）
+     */
+    private List<AiService.ChatMessage> buildChatMessages(Long sessionId) {
+        List<AiService.ChatMessage> messages = new ArrayList<>();
+
+        // 添加系统提示词
+        messages.add(new AiService.ChatMessage("system",
+                "你是一个专业的AI健身助手，名叫FitBot。你擅长制定训练计划、解答健身问题、提供营养建议。请用友好专业的语气回答。"));
+
+        // 获取最近20条消息作为上下文
+        LambdaQueryWrapper<AiChatMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiChatMessage::getSessionId, sessionId)
+               .orderByDesc(AiChatMessage::getCreatedAt)
+               .last("LIMIT 20");
+        List<AiChatMessage> history = messageMapper.selectList(wrapper);
+
+        // 反转顺序（从旧到新）
+        for (int i = history.size() - 1; i >= 0; i--) {
+            AiChatMessage msg = history.get(i);
+            messages.add(new AiService.ChatMessage(msg.getRole(), msg.getContent()));
+        }
+
+        return messages;
     }
 
     /**
