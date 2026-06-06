@@ -17,6 +17,10 @@ public class AchievementService {
         return achievementMapper.selectPage(page, null);
     }
 
+    public Achievement getById(Long id) {
+        return achievementMapper.selectById(id);
+    }
+
     public void save(Achievement achievement) {
         if (achievement.getId() == null) {
             achievementMapper.insert(achievement);

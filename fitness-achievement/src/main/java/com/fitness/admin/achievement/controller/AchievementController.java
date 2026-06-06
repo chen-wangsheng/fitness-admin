@@ -27,9 +27,23 @@ public class AchievementController extends BaseController {
         return page((Page) page);
     }
 
+    @Operation(summary = "成就详情")
+    @GetMapping("/{id}")
+    public R<Achievement> detail(@PathVariable Long id) {
+        return R.ok(achievementService.getById(id));
+    }
+
     @Operation(summary = "保存成就")
     @PostMapping
     public R<Void> save(@RequestBody Achievement achievement) {
+        achievementService.save(achievement);
+        return success();
+    }
+
+    @Operation(summary = "更新成就")
+    @PutMapping("/{id}")
+    public R<Void> update(@PathVariable Long id, @RequestBody Achievement achievement) {
+        achievement.setId(id);
         achievementService.save(achievement);
         return success();
     }
