@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -96,12 +97,19 @@ public class AiPlanService {
         return aiAdjustmentConfigMapper.selectList(null);
     }
 
-    public void updateAdjustmentRules(List<AiAdjustmentConfig> rules) {
-        for (AiAdjustmentConfig rule : rules) {
-            if (rule.getId() != null) {
-                aiAdjustmentConfigMapper.updateById(rule);
+    public void updateAdjustmentConfig(Map<String, Object> config) {
+        for (Map.Entry<String, Object> entry : config.entrySet()) {
+            LambdaQueryWrapper<AiAdjustmentConfig> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(AiAdjustmentConfig::getConfigKey, entry.getKey());
+            AiAdjustmentConfig existing = aiAdjustmentConfigMapper.selectOne(wrapper);
+            if (existing != null) {
+                existing.setConfigValue(String.valueOf(entry.getValue()));
+                aiAdjustmentConfigMapper.updateById(existing);
             } else {
-                aiAdjustmentConfigMapper.insert(rule);
+                AiAdjustmentConfig newConfig = new AiAdjustmentConfig();
+                newConfig.setConfigKey(entry.getKey());
+                newConfig.setConfigValue(String.valueOf(entry.getValue()));
+                aiAdjustmentConfigMapper.insert(newConfig);
             }
         }
     }

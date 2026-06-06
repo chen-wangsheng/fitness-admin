@@ -54,8 +54,8 @@ public class AiPlanController extends BaseController {
 
     @Operation(summary = "更新微调规则")
     @PutMapping("/adjustment-rules")
-    public R<Void> updateAdjustmentRules(@RequestBody List<AiAdjustmentConfig> rules) {
-        aiPlanService.updateAdjustmentRules(rules);
+    public R<Void> updateAdjustmentRules(@RequestBody Map<String, Object> config) {
+        aiPlanService.updateAdjustmentConfig(config);
         return success();
     }
 
