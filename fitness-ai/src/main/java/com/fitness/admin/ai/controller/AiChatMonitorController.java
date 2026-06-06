@@ -36,9 +36,8 @@ public class AiChatMonitorController extends BaseController {
 
     @Operation(summary = "会话详情")
     @GetMapping("/sessions/{id}")
-    public R<Map<String, Object>> sessionDetail(@PathVariable Long id) {
-        Map<String, Object> detail = aiChatMonitorService.getSessionDetail(id);
-        return R.ok(detail);
+    public R<AiChatSession> sessionDetail(@PathVariable Long id) {
+        return R.ok(aiChatMonitorService.getSessionDetail(id));
     }
 
     @Operation(summary = "消息列表")

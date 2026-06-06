@@ -3,20 +3,23 @@ package com.fitness.admin.ai.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitness.admin.ai.entity.AiChatIssue;
 import com.fitness.admin.ai.entity.AiChatMessage;
 import com.fitness.admin.ai.entity.AiChatSession;
 import com.fitness.admin.ai.mapper.AiChatIssueMapper;
 import com.fitness.admin.ai.mapper.AiChatMessageMapper;
 import com.fitness.admin.ai.mapper.AiChatSessionMapper;
-import com.fitness.admin.user.entity.User;
-import com.fitness.admin.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiChatMonitorService {
@@ -24,7 +27,6 @@ public class AiChatMonitorService {
     private final AiChatSessionMapper aiChatSessionMapper;
     private final AiChatMessageMapper aiChatMessageMapper;
     private final AiChatIssueMapper aiChatIssueMapper;
-    private final UserMapper userMapper;
 
     public Page<AiChatSession> querySessionPage(Integer pageNum, Integer pageSize) {
         Page<AiChatSession> page = new Page<>(pageNum, pageSize);
@@ -34,8 +36,25 @@ public class AiChatMonitorService {
     public Page<AiChatMessage> queryMessagePage(Long sessionId, Integer pageNum, Integer pageSize) {
         Page<AiChatMessage> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<AiChatMessage> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(AiChatMessage::getSessionId, sessionId);
-        return aiChatMessageMapper.selectPage(page, wrapper);
+        wrapper.eq(AiChatMessage::getSessionId, sessionId)
+               .orderByAsc(AiChatMessage::getId);
+        Page<AiChatMessage> result = aiChatMessageMapper.selectPage(page, wrapper);
+        result.getRecords().forEach(this::parseRagRefs);
+        return result;
+    }
+
+    private void parseRagRefs(AiChatMessage message) {
+        if (message.getRagRefs() == null || message.getRagRefs().isBlank()) {
+            return;
+        }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            List<AiChatMessage.RagReference> refs = mapper.readValue(
+                    message.getRagRefs(), new TypeReference<>() {});
+            message.setRagReferences(refs);
+        } catch (Exception e) {
+            log.warn("解析ragRefs失败: {}", message.getRagRefs(), e);
+        }
     }
 
     public Map<String, Object> getFeedbackStats() {
@@ -53,31 +72,8 @@ public class AiChatMonitorService {
         return stats;
     }
 
-    public Map<String, Object> getSessionDetail(Long sessionId) {
-        AiChatSession session = aiChatSessionMapper.selectById(sessionId);
-        if (session == null) {
-            return null;
-        }
-        User user = userMapper.selectById(session.getUserId());
-        long thumbsUp = aiChatMessageMapper.selectCount(
-                new LambdaQueryWrapper<AiChatMessage>()
-                        .eq(AiChatMessage::getSessionId, sessionId)
-                        .eq(AiChatMessage::getFeedback, 1));
-        long thumbsDown = aiChatMessageMapper.selectCount(
-                new LambdaQueryWrapper<AiChatMessage>()
-                        .eq(AiChatMessage::getSessionId, sessionId)
-                        .eq(AiChatMessage::getFeedback, -1));
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("sessionId", session.getId());
-        result.put("userName", user != null ? user.getNickname() : "未知用户");
-        result.put("messageCount", session.getMessageCount());
-        result.put("thumbsUp", thumbsUp);
-        result.put("thumbsDown", thumbsDown);
-        result.put("status", session.getStatus() == 1 ? "active" : "archived");
-        result.put("startTime", session.getCreatedAt());
-        result.put("lastMessageTime", session.getUpdatedAt());
-        return result;
+    public AiChatSession getSessionDetail(Long sessionId) {
+        return aiChatSessionMapper.selectById(sessionId);
     }
 
     public void markIssue(Long sessionId, Long messageId, Long adminUserId, String reason) {
