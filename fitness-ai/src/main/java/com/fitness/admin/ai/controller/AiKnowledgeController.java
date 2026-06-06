@@ -61,9 +61,17 @@ public class AiKnowledgeController extends BaseController {
         return success(list);
     }
 
-    @Operation(summary = "保存知识")
+    @Operation(summary = "新增知识")
     @PostMapping
     public R<Void> save(@RequestBody KnowledgeBase knowledgeBase) {
+        aiKnowledgeService.save(knowledgeBase);
+        return success();
+    }
+
+    @Operation(summary = "更新知识")
+    @PutMapping("/{id}")
+    public R<Void> update(@PathVariable Long id, @RequestBody KnowledgeBase knowledgeBase) {
+        knowledgeBase.setId(id);
         aiKnowledgeService.save(knowledgeBase);
         return success();
     }

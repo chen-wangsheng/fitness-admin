@@ -95,4 +95,14 @@ public class AiPlanService {
     public List<AiAdjustmentConfig> getAdjustmentRules() {
         return aiAdjustmentConfigMapper.selectList(null);
     }
+
+    public void updateAdjustmentRules(List<AiAdjustmentConfig> rules) {
+        for (AiAdjustmentConfig rule : rules) {
+            if (rule.getId() != null) {
+                aiAdjustmentConfigMapper.updateById(rule);
+            } else {
+                aiAdjustmentConfigMapper.insert(rule);
+            }
+        }
+    }
 }

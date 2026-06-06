@@ -52,6 +52,13 @@ public class AiPlanController extends BaseController {
         return R.ok(aiPlanService.getAdjustmentRules());
     }
 
+    @Operation(summary = "更新微调规则")
+    @PutMapping("/adjustment-rules")
+    public R<Void> updateAdjustmentRules(@RequestBody List<AiAdjustmentConfig> rules) {
+        aiPlanService.updateAdjustmentRules(rules);
+        return success();
+    }
+
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
     public R<Void> updateStatus(@PathVariable Long id, @RequestParam String status) {
