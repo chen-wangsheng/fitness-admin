@@ -12,6 +12,10 @@ spring:
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
 
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
 wx:
   miniapp:
     appid: ${WX_APPID}
@@ -21,6 +25,8 @@ wx:
 
 logging:
   level:
+    root: warn
     com.fitness.admin: info
+    org.springframework.web: warn
   file:
     name: /var/log/fitness-admin/app.log
