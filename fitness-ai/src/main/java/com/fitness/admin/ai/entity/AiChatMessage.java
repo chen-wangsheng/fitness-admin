@@ -35,5 +35,8 @@ public class AiChatMessage implements Serializable {
     public static class RagReference {
         private Long id;
         private String source;
+        private Double score;
+        private String title;
+        private String categoryName;
     }
 }
