@@ -26,7 +26,6 @@ spring:
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.fitness.admin.**.entity
-  type-handlers-package: com.baomidou.mybatisplus.extension.handlers
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
@@ -58,12 +57,12 @@ logging:
     com.fitness.admin: debug
     org.springframework.security: debug
 
-cos:
-  secret-id: ${COS_SECRET_ID:}
-  secret-key: ${COS_SECRET_KEY:}
-  region: ${COS_REGION:}
-  bucket: ${COS_BUCKET:}
-  url-prefix: ${COS_URL_PREFIX:}
+qiniu:
+  access-key: ${QINIU_ACCESS_KEY:}
+  secret-key: ${QINIU_SECRET_KEY:}
+  bucket: ${QINIU_BUCKET:}
+  domain: ${QINIU_DOMAIN:}
+  upload-domain: ${QINIU_UPLOAD_DOMAIN:https://upload-z2.qiniup.com}
 
 ai:
   provider: ${AI_PROVIDER:openai}

@@ -9,7 +9,7 @@
 
     <select id="selectAdminPage" resultType="java.util.Map">
         SELECT
-            au.id, au.username, au.nickname, au.avatar, au.email, au.phone,
+            au.id, au.username, au.nickname, CAST(au.avatar AS CHAR) AS avatar, au.email, au.phone,
             au.user_id AS userId, au.role_id AS roleId, CAST(au.status AS UNSIGNED) AS status,
             au.last_login_ip AS lastLoginIp, au.last_login_time AS lastLoginTime,
             au.created_at AS createdAt,

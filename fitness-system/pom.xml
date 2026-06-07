@@ -30,8 +30,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.qcloud</groupId>
-            <artifactId>cos_api</artifactId>
+            <groupId>com.qiniu</groupId>
+            <artifactId>qiniu-java-sdk</artifactId>
+            <version>7.18.0</version>
         </dependency>
     </dependencies>
 </project>
