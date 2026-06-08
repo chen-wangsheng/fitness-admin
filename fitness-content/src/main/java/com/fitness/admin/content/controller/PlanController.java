@@ -63,8 +63,8 @@ public class PlanController extends BaseController {
     @LogOperation(action = "编辑", module = "训练计划")
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
-    public R<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
-        planService.updateStatus(id, status);
+    public R<Void> updateStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Integer> body) {
+        planService.updateStatus(id, body.get("status"));
         return success();
     }
 }

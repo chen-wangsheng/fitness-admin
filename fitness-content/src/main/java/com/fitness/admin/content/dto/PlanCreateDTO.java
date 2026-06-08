@@ -9,7 +9,7 @@ public class PlanCreateDTO {
 
     private String name;
     private String description;
-    private String coverImage;
+    private String coverImageUrl;
     private String fitnessGoal;
     private String fitnessLevel;
     private Integer durationWeeks;
