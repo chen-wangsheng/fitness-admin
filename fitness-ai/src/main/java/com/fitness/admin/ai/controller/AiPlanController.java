@@ -64,8 +64,8 @@ public class AiPlanController extends BaseController {
 
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
-    public R<Void> updateStatus(@PathVariable Long id, @RequestParam String status) {
-        aiPlanService.updateStatus(id, status);
+    public R<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        aiPlanService.updateStatus(id, body.get("status"));
         return success();
     }
 

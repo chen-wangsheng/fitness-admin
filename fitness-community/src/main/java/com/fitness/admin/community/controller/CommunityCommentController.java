@@ -29,8 +29,8 @@ public class CommunityCommentController extends BaseController {
 
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
-    public R<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
-        communityCommentService.updateStatus(id, status);
+    public R<Void> updateStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Integer> body) {
+        communityCommentService.updateStatus(id, body.get("status"));
         return success();
     }
 }
