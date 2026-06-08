@@ -4,6 +4,7 @@ import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.content.entity.ExerciseCategory;
 import com.fitness.admin.content.service.CategoryService;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class CategoryController extends BaseController {
         return success(categoryService.list());
     }
 
+    @LogOperation(action = "新增", module = "分类管理")
     @Operation(summary = "保存分类")
     @PostMapping
     public R<Void> save(@RequestBody ExerciseCategory category) {
@@ -32,6 +34,16 @@ public class CategoryController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "分类管理")
+    @Operation(summary = "更新分类")
+    @PutMapping("/{id}")
+    public R<Void> update(@PathVariable Long id, @RequestBody ExerciseCategory category) {
+        category.setId(id);
+        categoryService.save(category);
+        return success();
+    }
+
+    @LogOperation(action = "删除", module = "分类管理")
     @Operation(summary = "删除分类")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

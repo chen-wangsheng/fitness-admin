@@ -6,6 +6,7 @@ import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.system.entity.Announcement;
 import com.fitness.admin.system.service.AnnouncementService;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class AnnouncementController extends BaseController {
         return page((Page) page);
     }
 
+    @LogOperation(action = "新增", module = "公告管理")
     @Operation(summary = "保存公告")
     @PostMapping
     public R<Void> save(@RequestBody Announcement announcement) {
@@ -34,6 +36,7 @@ public class AnnouncementController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "删除", module = "公告管理")
     @Operation(summary = "删除公告")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

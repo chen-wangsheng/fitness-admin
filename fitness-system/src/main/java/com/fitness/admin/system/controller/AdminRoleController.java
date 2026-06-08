@@ -6,6 +6,7 @@ import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.system.entity.AdminRole;
 import com.fitness.admin.system.service.AdminRoleService;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class AdminRoleController extends BaseController {
         return page((Page) page);
     }
 
+    @LogOperation(action = "新增", module = "角色管理")
     @Operation(summary = "保存角色")
     @PostMapping
     public R<Void> save(@RequestBody AdminRole role) {
@@ -34,6 +36,7 @@ public class AdminRoleController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "删除", module = "角色管理")
     @Operation(summary = "删除角色")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

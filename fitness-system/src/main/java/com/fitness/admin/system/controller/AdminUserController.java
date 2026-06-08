@@ -5,6 +5,7 @@ import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.system.service.AdminUserService;
+import com.fitness.admin.common.annotation.LogOperation;
 import com.fitness.admin.user.entity.AdminUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +32,7 @@ public class AdminUserController extends BaseController {
         return page((Page) result);
     }
 
+    @LogOperation(action = "新增", module = "管理员管理")
     @Operation(summary = "新增管理员")
     @PostMapping
     public R<Void> create(@RequestBody AdminUser adminUser) {
@@ -38,6 +40,7 @@ public class AdminUserController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "管理员管理")
     @Operation(summary = "更新管理员")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
@@ -51,6 +54,7 @@ public class AdminUserController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "启用/禁用", module = "管理员管理")
     @Operation(summary = "更新管理员状态")
     @PutMapping("/{id}/status")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
@@ -59,6 +63,7 @@ public class AdminUserController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "重置密码", module = "管理员管理")
     @Operation(summary = "重置密码")
     @PostMapping("/{id}/reset-password")
     public R<Void> resetPassword(@PathVariable Long id) {

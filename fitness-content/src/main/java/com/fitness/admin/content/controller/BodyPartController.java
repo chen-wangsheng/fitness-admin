@@ -4,6 +4,7 @@ import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.content.entity.BodyPart;
 import com.fitness.admin.content.service.BodyPartService;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class BodyPartController extends BaseController {
         return success(bodyPartService.list());
     }
 
+    @LogOperation(action = "新增", module = "部位管理")
     @Operation(summary = "保存部位")
     @PostMapping
     public R<Void> save(@RequestBody BodyPart bodyPart) {
@@ -32,6 +34,16 @@ public class BodyPartController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "部位管理")
+    @Operation(summary = "更新部位")
+    @PutMapping("/{id}")
+    public R<Void> update(@PathVariable Long id, @RequestBody BodyPart bodyPart) {
+        bodyPart.setId(id);
+        bodyPartService.save(bodyPart);
+        return success();
+    }
+
+    @LogOperation(action = "删除", module = "部位管理")
     @Operation(summary = "删除部位")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

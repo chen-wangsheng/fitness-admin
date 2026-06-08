@@ -9,6 +9,7 @@ import com.fitness.admin.content.dto.PlanQueryDTO;
 import com.fitness.admin.content.entity.WorkoutPlan;
 import com.fitness.admin.content.service.PlanService;
 import com.fitness.admin.content.vo.PlanVO;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class PlanController extends BaseController {
         return success(planService.getDetail(id));
     }
 
+    @LogOperation(action = "新增", module = "训练计划")
     @Operation(summary = "创建计划")
     @PostMapping
     public R<Void> create(@RequestBody PlanCreateDTO createDTO) {
@@ -42,6 +44,7 @@ public class PlanController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "训练计划")
     @Operation(summary = "更新计划")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id, @RequestBody PlanCreateDTO updateDTO) {
@@ -49,6 +52,7 @@ public class PlanController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "删除", module = "训练计划")
     @Operation(summary = "删除计划")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
@@ -56,6 +60,7 @@ public class PlanController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "训练计划")
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
     public R<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {

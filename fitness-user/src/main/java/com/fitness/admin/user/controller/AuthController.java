@@ -1,5 +1,6 @@
 package com.fitness.admin.user.controller;
 
+import com.fitness.admin.common.annotation.LogOperation;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.user.dto.ChangePasswordRequest;
@@ -20,12 +21,14 @@ public class AuthController extends BaseController {
 
     private final AuthService authService;
 
+    @LogOperation(action = "登录", module = "认证管理")
     @Operation(summary = "用户登录")
     @PostMapping("/login")
     public R<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         return success(authService.login(request));
     }
 
+    @LogOperation(action = "登出", module = "认证管理")
     @Operation(summary = "用户登出")
     @PostMapping("/logout")
     public R<Void> logout() {
@@ -45,6 +48,7 @@ public class AuthController extends BaseController {
         return success(authService.getCurrentUserInfo());
     }
 
+    @LogOperation(action = "修改密码", module = "认证管理")
     @Operation(summary = "修改密码")
     @PutMapping("/password")
     public R<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {

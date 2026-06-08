@@ -4,6 +4,7 @@ import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.system.entity.SysConfig;
 import com.fitness.admin.system.service.SysConfigService;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class SysConfigController extends BaseController {
         return success(sysConfigService.list());
     }
 
+    @LogOperation(action = "新增", module = "系统配置")
     @Operation(summary = "保存配置")
     @PostMapping
     public R<Void> save(@RequestBody SysConfig config) {
@@ -36,6 +38,7 @@ public class SysConfigController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "系统配置")
     @Operation(summary = "按key更新配置")
     @PutMapping("/{configKey}")
     public R<Void> updateByKey(@PathVariable String configKey, @RequestBody Map<String, String> body) {
@@ -45,6 +48,7 @@ public class SysConfigController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "删除", module = "系统配置")
     @Operation(summary = "删除配置")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
@@ -68,6 +72,7 @@ public class SysConfigController extends BaseController {
         return success(result);
     }
 
+    @LogOperation(action = "编辑", module = "系统配置")
     @Operation(summary = "更新AI配置")
     @PutMapping("/ai-config")
     public R<Void> updateAiConfig(@RequestBody Map<String, String> configMap) {

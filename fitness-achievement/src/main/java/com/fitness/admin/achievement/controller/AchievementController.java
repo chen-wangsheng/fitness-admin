@@ -6,6 +6,7 @@ import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.achievement.entity.Achievement;
 import com.fitness.admin.achievement.service.AchievementService;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class AchievementController extends BaseController {
         return R.ok(achievementService.getById(id));
     }
 
+    @LogOperation(action = "新增", module = "成就管理")
     @Operation(summary = "保存成就")
     @PostMapping
     public R<Void> save(@RequestBody Achievement achievement) {
@@ -40,6 +42,7 @@ public class AchievementController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "成就管理")
     @Operation(summary = "更新成就")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id, @RequestBody Achievement achievement) {
@@ -48,6 +51,7 @@ public class AchievementController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "删除", module = "成就管理")
     @Operation(summary = "删除成就")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {

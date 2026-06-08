@@ -10,6 +10,7 @@ import com.fitness.admin.content.entity.BodyPart;
 import com.fitness.admin.content.service.BodyPartService;
 import com.fitness.admin.content.service.ExerciseService;
 import com.fitness.admin.content.vo.ExerciseVO;
+import com.fitness.admin.common.annotation.LogOperation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class ExerciseController extends BaseController {
         return success(exerciseService.getDetail(id));
     }
 
+    @LogOperation(action = "新增", module = "动作管理")
     @Operation(summary = "创建动作")
     @PostMapping
     public R<Void> create(@RequestBody ExerciseCreateDTO createDTO) {
@@ -52,6 +54,7 @@ public class ExerciseController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "动作管理")
     @Operation(summary = "更新动作")
     @PutMapping("/{id}")
     public R<Void> update(@PathVariable Long id, @RequestBody ExerciseCreateDTO updateDTO) {
@@ -59,6 +62,7 @@ public class ExerciseController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "删除", module = "动作管理")
     @Operation(summary = "删除动作")
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
