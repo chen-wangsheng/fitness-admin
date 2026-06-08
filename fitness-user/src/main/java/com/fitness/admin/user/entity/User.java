@@ -17,6 +17,7 @@ public class User extends BaseEntity {
     private String unionid;
     private String nickname;
     private String avatarUrl;
+    private String email;
     private Integer gender;
     private LocalDate birthday;
     private BigDecimal heightCm;

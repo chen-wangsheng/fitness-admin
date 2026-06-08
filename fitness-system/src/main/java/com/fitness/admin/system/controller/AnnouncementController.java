@@ -36,6 +36,15 @@ public class AnnouncementController extends BaseController {
         return success();
     }
 
+    @LogOperation(action = "编辑", module = "公告管理")
+    @Operation(summary = "更新公告")
+    @PutMapping("/{id}")
+    public R<Void> update(@PathVariable Long id, @RequestBody Announcement announcement) {
+        announcement.setId(id);
+        announcementService.save(announcement);
+        return success();
+    }
+
     @LogOperation(action = "删除", module = "公告管理")
     @Operation(summary = "删除公告")
     @DeleteMapping("/{id}")
