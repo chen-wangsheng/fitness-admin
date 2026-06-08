@@ -109,17 +109,42 @@ public class AiPlanService {
     }
 
     public void updateAdjustmentConfig(Map<String, Object> config) {
+        // 获取所有已有的合法config_key
+        List<AiAdjustmentConfig> existingConfigs = aiAdjustmentConfigMapper.selectList(null);
+        java.util.Set<String> validKeys = new java.util.HashSet<>();
+        for (AiAdjustmentConfig c : existingConfigs) {
+            validKeys.add(c.getConfigKey());
+        }
+
         for (Map.Entry<String, Object> entry : config.entrySet()) {
-            LambdaQueryWrapper<AiAdjustmentConfig> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(AiAdjustmentConfig::getConfigKey, entry.getKey());
-            AiAdjustmentConfig existing = aiAdjustmentConfigMapper.selectOne(wrapper);
-            if (existing != null) {
-                existing.setConfigValue(String.valueOf(entry.getValue()));
-                aiAdjustmentConfigMapper.updateById(existing);
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            // 跳过非字符串值的复杂对象
+            if (value == null || value instanceof Map || value instanceof List) {
+                continue;
+            }
+
+            String strValue = String.valueOf(value);
+            // 限制单值长度不超过255
+            if (strValue.length() > 255) {
+                continue;
+            }
+
+            if (validKeys.contains(key)) {
+                // 更新已有配置
+                LambdaQueryWrapper<AiAdjustmentConfig> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(AiAdjustmentConfig::getConfigKey, key);
+                AiAdjustmentConfig existing = aiAdjustmentConfigMapper.selectOne(wrapper);
+                if (existing != null) {
+                    existing.setConfigValue(strValue);
+                    aiAdjustmentConfigMapper.updateById(existing);
+                }
             } else {
+                // 新增配置（仅允许简单值）
                 AiAdjustmentConfig newConfig = new AiAdjustmentConfig();
-                newConfig.setConfigKey(entry.getKey());
-                newConfig.setConfigValue(String.valueOf(entry.getValue()));
+                newConfig.setConfigKey(key);
+                newConfig.setConfigValue(strValue);
                 aiAdjustmentConfigMapper.insert(newConfig);
             }
         }
