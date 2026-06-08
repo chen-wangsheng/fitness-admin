@@ -24,9 +24,9 @@ public class OperationLogController extends BaseController {
 
     @Operation(summary = "日志列表")
     @GetMapping("/list")
-    public R<PageResult<OperationLog>> list(@RequestParam(defaultValue = "1") Integer pageNum,
-                                            @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<OperationLog> page = operationLogService.queryPage(pageNum, pageSize);
-        return page((Page) page);
+    public R<PageResult<OperationLog>> list(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return page(operationLogService.queryPage(pageNum, pageSize));
     }
 }

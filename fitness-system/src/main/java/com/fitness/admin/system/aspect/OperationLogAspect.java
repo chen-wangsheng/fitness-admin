@@ -52,6 +52,10 @@ public class OperationLogAspect {
 
         // 获取当前登录用户 ID
         Long userId = SecurityUtil.getCurrentUserId();
+        if (userId == null) {
+            log.warn("操作日志记录失败: 无法获取当前用户ID");
+            return;
+        }
 
         // 构建日志记录
         OperationLog logEntry = new OperationLog();

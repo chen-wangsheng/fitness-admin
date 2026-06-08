@@ -1,6 +1,7 @@
 package com.fitness.admin.community.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.community.entity.SensitiveWord;
 import com.fitness.admin.community.mapper.SensitiveWordMapper;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,11 @@ public class SensitiveWordService {
     public List<SensitiveWord> list() {
         LambdaQueryWrapper<SensitiveWord> wrapper = new LambdaQueryWrapper<>();
         return sensitiveWordMapper.selectList(wrapper);
+    }
+
+    public Page<SensitiveWord> listPage(Integer pageNum, Integer pageSize) {
+        Page<SensitiveWord> page = new Page<>(pageNum, pageSize);
+        return sensitiveWordMapper.selectPage(page, new LambdaQueryWrapper<>());
     }
 
     public void save(SensitiveWord word) {
