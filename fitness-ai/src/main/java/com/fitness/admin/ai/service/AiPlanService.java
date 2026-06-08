@@ -30,9 +30,20 @@ public class AiPlanService {
     private final AiAdjustmentConfigMapper aiAdjustmentConfigMapper;
     private final UserMapper userMapper;
 
-    public Page<AiPlan> queryPage(Integer pageNum, Integer pageSize) {
+    public Page<AiPlan> queryPage(Integer pageNum, Integer pageSize, Long userId, String status, String splitType) {
         Page<AiPlan> page = new Page<>(pageNum, pageSize);
-        return aiPlanMapper.selectPage(page, null);
+        LambdaQueryWrapper<AiPlan> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) {
+            wrapper.eq(AiPlan::getUserId, userId);
+        }
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(AiPlan::getStatus, status);
+        }
+        if (splitType != null && !splitType.isEmpty()) {
+            wrapper.eq(AiPlan::getSplitType, splitType);
+        }
+        wrapper.orderByDesc(AiPlan::getCreatedAt);
+        return aiPlanMapper.selectPage(page, wrapper);
     }
 
     public void updateStatus(Long id, String status) {

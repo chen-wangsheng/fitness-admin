@@ -137,4 +137,38 @@ public class AiSafetyController extends BaseController {
         aiPromptTemplateService.delete(id);
         return success();
     }
+
+    @Operation(summary = "Prompt模板详情")
+    @GetMapping("/prompt/{id}")
+    public R<AiPromptTemplate> promptDetail(@PathVariable Long id) {
+        return R.ok(aiPromptTemplateService.getById(id));
+    }
+
+    @Operation(summary = "更新Prompt模板")
+    @PutMapping("/prompt/{id}")
+    public R<Void> updatePrompt(@PathVariable Long id, @RequestBody AiPromptTemplate template) {
+        template.setId(id);
+        aiPromptTemplateService.save(template);
+        return success();
+    }
+
+    @Operation(summary = "激活Prompt模板")
+    @PutMapping("/prompt/{id}/activate")
+    public R<Void> activatePrompt(@PathVariable Long id) {
+        aiPromptTemplateService.activate(id);
+        return success();
+    }
+
+    @Operation(summary = "Prompt模板版本列表")
+    @GetMapping("/prompt/{id}/versions")
+    public R<List<AiPromptTemplate>> promptVersions(@PathVariable Long id) {
+        return R.ok(aiPromptTemplateService.getVersions(id));
+    }
+
+    @Operation(summary = "回滚Prompt模板")
+    @PostMapping("/prompt/{id}/rollback")
+    public R<Void> rollbackPrompt(@PathVariable Long id) {
+        aiPromptTemplateService.rollback(id);
+        return success();
+    }
 }

@@ -29,8 +29,11 @@ public class AiPlanController extends BaseController {
     @Operation(summary = "AI计划列表")
     @GetMapping("/list")
     public R<PageResult<AiPlan>> list(@RequestParam(defaultValue = "1") Integer pageNum,
-                                      @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<AiPlan> page = aiPlanService.queryPage(pageNum, pageSize);
+                                      @RequestParam(defaultValue = "10") Integer pageSize,
+                                      @RequestParam(required = false) Long userId,
+                                      @RequestParam(required = false) String status,
+                                      @RequestParam(required = false) String splitType) {
+        Page<AiPlan> page = aiPlanService.queryPage(pageNum, pageSize, userId, status, splitType);
         return page((Page) page);
     }
 
