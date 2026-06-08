@@ -94,4 +94,29 @@ public class AiKnowledgeController extends BaseController {
     public R<List<Map<String, Object>>> ragHitRate() {
         return R.ok(aiAnalyticsService.getRagHitRate());
     }
+
+    @Operation(summary = "RAG检索测试")
+    @PostMapping("/rag-test")
+    public R<Map<String, Object>> ragTest(@RequestBody Map<String, Object> params) {
+        String query = (String) params.get("query");
+        Integer topK = params.get("topK") != null ? (Integer) params.get("topK") : 5;
+
+        // 模拟RAG检索结果
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (int i = 1; i <= Math.min(topK, 3); i++) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", i);
+            item.put("title", "相关知识 #" + i + " - " + query);
+            item.put("categoryName", "训练相关");
+            item.put("tags", List.of("力量训练", "增肌"));
+            item.put("summary", "这是关于 \"" + query + "\" 的模拟检索结果摘要内容...");
+            item.put("score", 0.95 - i * 0.05);
+            results.add(item);
+        }
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("results", results);
+        data.put("qualityScore", 4.5);
+        return success(data);
+    }
 }
