@@ -14,6 +14,6 @@ public class OperationLogService {
 
     public Page<OperationLog> queryPage(Integer pageNum, Integer pageSize) {
         Page<OperationLog> page = new Page<>(pageNum, pageSize);
-        return operationLogMapper.selectPage(page, null);
+        return operationLogMapper.selectPageWithUser(page);
     }
 }

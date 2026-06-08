@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.admin.system.mapper.OperationLogMapper">
+
+    <select id="selectPageWithUser" resultType="com.fitness.admin.system.entity.OperationLog">
+        SELECT l.*, u.username
+        FROM admin_operation_log l
+        LEFT JOIN admin_user u ON l.admin_user_id = u.id
+        ORDER BY l.created_at DESC
+    </select>
+
+</mapper>

@@ -9,6 +9,7 @@ import com.fitness.admin.user.dto.LoginResponse;
 import com.fitness.admin.user.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,11 +22,10 @@ public class AuthController extends BaseController {
 
     private final AuthService authService;
 
-    @LogOperation(action = "登录", module = "认证管理")
     @Operation(summary = "用户登录")
     @PostMapping("/login")
-    public R<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return success(authService.login(request));
+    public R<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+        return success(authService.login(request, httpRequest));
     }
 
     @LogOperation(action = "登出", module = "认证管理")

@@ -1,7 +1,6 @@
 package com.fitness.admin.system.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -10,21 +9,18 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("admin_operation_log")
-public class OperationLog implements Serializable {
+@TableName("admin_login_log")
+public class LoginLog implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(type = IdType.AUTO)
     private Long id;
     private Long adminUserId;
-    @TableField(exist = false)
     private String username;
-    private String action;
-    private String module;
-    private String targetId;
-    private String detail;
     private String ipAddress;
     private String userAgent;
+    private Integer loginStatus;
+    private String failReason;
     private LocalDateTime createdAt;
 }

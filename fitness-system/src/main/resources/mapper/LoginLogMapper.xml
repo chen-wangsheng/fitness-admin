@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fitness.admin.system.mapper.LoginLogMapper">
+
+    <select id="selectPageWithUsername" resultType="com.fitness.admin.system.entity.LoginLog">
+        SELECT id, admin_user_id AS adminUserId, username, ip_address AS ipAddress,
+               user_agent AS userAgent, login_status AS loginStatus, fail_reason AS failReason,
+               created_at AS createdAt
+        FROM admin_login_log
+        ORDER BY created_at DESC
+    </select>
+
+</mapper>
