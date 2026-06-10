@@ -22,6 +22,11 @@ public class PrRecordItem {
     private String exerciseName;
 
     /**
+     * 动作演示图
+     */
+    private String demoImageUrl;
+
+    /**
      * 最大重量(kg)
      */
     private BigDecimal maxWeight;

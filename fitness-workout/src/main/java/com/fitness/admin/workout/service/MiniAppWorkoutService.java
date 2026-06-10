@@ -15,6 +15,10 @@ import com.fitness.admin.workout.entity.WorkoutLogSet;
 import com.fitness.admin.workout.mapper.WorkoutLogExerciseMapper;
 import com.fitness.admin.workout.mapper.WorkoutLogMapper;
 import com.fitness.admin.workout.mapper.WorkoutLogSetMapper;
+import com.fitness.admin.content.mapper.PlanDayExerciseMapper;
+import com.fitness.admin.content.vo.PlanExerciseVO;
+import com.fitness.admin.content.entity.Exercise;
+import com.fitness.admin.content.mapper.ExerciseMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +45,8 @@ public class MiniAppWorkoutService {
     private final WorkoutLogExerciseMapper workoutLogExerciseMapper;
     private final WorkoutLogSetMapper workoutLogSetMapper;
     private final UserMapper userMapper;
+    private final PlanDayExerciseMapper planDayExerciseMapper;
+    private final ExerciseMapper exerciseMapper;
 
     /**
      * 开始训练
@@ -73,9 +79,28 @@ public class MiniAppWorkoutService {
         workoutLog.setUpdatedAt(LocalDateTime.now());
         workoutLogMapper.insert(workoutLog);
 
-        // TODO: 根据planId和planDayId查询计划动作列表
-        // 这里返回空列表，实际需要从plan_day_exercise表查询
+        // 根据计划创建训练动作记录
         List<ExerciseInfo> exercises = new ArrayList<>();
+        if (request.getPlanDayId() != null) {
+            List<PlanExerciseVO> planExercises = planDayExerciseMapper.selectByPlanDayId(request.getPlanDayId());
+            for (PlanExerciseVO pe : planExercises) {
+                WorkoutLogExercise logExercise = new WorkoutLogExercise();
+                logExercise.setWorkoutLogId(workoutLog.getId());
+                logExercise.setExerciseId(pe.getExerciseId());
+                logExercise.setSortOrder(pe.getSort() != null ? pe.getSort() : 0);
+                workoutLogExerciseMapper.insert(logExercise);
+
+                ExerciseInfo info = new ExerciseInfo();
+                info.setLogExerciseId(logExercise.getId());
+                info.setExerciseId(pe.getExerciseId());
+                info.setExerciseName(pe.getExerciseName());
+                info.setSets(pe.getSets() != null ? pe.getSets() : 3);
+                info.setReps(parseReps(pe.getReps()));
+                info.setRestSeconds(pe.getRestSeconds() != null ? pe.getRestSeconds() : 60);
+                info.setSort(pe.getSort());
+                exercises.add(info);
+            }
+        }
 
         StartWorkoutResponse response = new StartWorkoutResponse();
         response.setWorkoutLogId(workoutLog.getId());
@@ -133,17 +158,50 @@ public class MiniAppWorkoutService {
 
         // 更新训练记录
         workoutLog.setEndTime(LocalDateTime.now());
-        workoutLog.setDurationMin((int) ChronoUnit.MINUTES.between(workoutLog.getStartTime(), workoutLog.getEndTime()));
+        long durationSeconds = ChronoUnit.SECONDS.between(workoutLog.getStartTime(), workoutLog.getEndTime());
+        workoutLog.setDurationMin((int) Math.max(1, durationSeconds)); // 存储秒数（与SQL注释一致）
         workoutLog.setFeelingScore(request.getFeelingScore());
         workoutLog.setRpe(request.getRpe());
         workoutLog.setNotes(request.getNotes());
         workoutLog.setStatus("completed");
         workoutLog.setUpdatedAt(LocalDateTime.now());
 
-        // TODO: 计算总训练量和卡路里
-        workoutLog.setTotalVolumeKg(BigDecimal.ZERO);
-        workoutLog.setTotalSets(0);
-        workoutLog.setEstimatedCalories(BigDecimal.ZERO);
+        // 从 workout_log_exercise + workout_log_set 聚合统计
+        LambdaQueryWrapper<WorkoutLogExercise> exWrapper = new LambdaQueryWrapper<>();
+        exWrapper.eq(WorkoutLogExercise::getWorkoutLogId, workoutLog.getId())
+                 .select(WorkoutLogExercise::getId);
+        List<WorkoutLogExercise> logExercises = workoutLogExerciseMapper.selectList(exWrapper);
+
+        int completedSets = 0;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+
+        if (!logExercises.isEmpty()) {
+            List<Long> logExerciseIds = logExercises.stream()
+                    .map(WorkoutLogExercise::getId)
+                    .toList();
+
+            LambdaQueryWrapper<WorkoutLogSet> setWrapper = new LambdaQueryWrapper<>();
+            setWrapper.in(WorkoutLogSet::getWorkoutLogExerciseId, logExerciseIds)
+                      .eq(WorkoutLogSet::getCompleted, 1);
+            List<WorkoutLogSet> completedSetList = workoutLogSetMapper.selectList(setWrapper);
+
+            completedSets = completedSetList.size();
+            for (WorkoutLogSet set : completedSetList) {
+                BigDecimal w = set.getWeight() != null ? set.getWeight() : BigDecimal.ZERO;
+                int r = set.getReps() != null ? set.getReps() : 0;
+                totalVolume = totalVolume.add(w.multiply(BigDecimal.valueOf(r)));
+            }
+        }
+
+        // 简易卡路里估算：时长(分钟) × 5（中等强度平均消耗）
+        double durationMinutes = workoutLog.getDurationMin() / 60.0;
+        BigDecimal estimatedCalories = BigDecimal.valueOf(durationMinutes)
+                .multiply(BigDecimal.valueOf(5))
+                .setScale(0, java.math.RoundingMode.HALF_UP);
+
+        workoutLog.setTotalVolumeKg(totalVolume);
+        workoutLog.setTotalSets(completedSets);
+        workoutLog.setEstimatedCalories(estimatedCalories);
 
         workoutLogMapper.updateById(workoutLog);
 
@@ -274,34 +332,55 @@ public class MiniAppWorkoutService {
                 .collect(java.util.stream.Collectors.toMap(WorkoutLogExercise::getId, WorkoutLogExercise::getExerciseId));
         List<Long> logExerciseIds = exercises.stream().map(WorkoutLogExercise::getId).toList();
 
-        // 3. 查询PR记录（is_pr=1）
+        // 3. 查询所有已完成的组（不依赖 is_pr 标记，直接从全量数据中取最大重量）
         LambdaQueryWrapper<WorkoutLogSet> setWrapper = new LambdaQueryWrapper<>();
         setWrapper.in(WorkoutLogSet::getWorkoutLogExerciseId, logExerciseIds)
-                  .eq(WorkoutLogSet::getIsPr, 1)
+                  .eq(WorkoutLogSet::getCompleted, 1)
                   .isNotNull(WorkoutLogSet::getWeight);
-        List<WorkoutLogSet> prSets = workoutLogSetMapper.selectList(setWrapper);
+        List<WorkoutLogSet> completedSets = workoutLogSetMapper.selectList(setWrapper);
 
         // 4. 按动作分组，取最大重量
         Map<Long, WorkoutLogSet> prMap = new java.util.HashMap<>();
-        for (WorkoutLogSet set : prSets) {
+        for (WorkoutLogSet set : completedSets) {
             Long exerciseId = logExerciseToExerciseMap.get(set.getWorkoutLogExerciseId());
             if (exerciseId == null) continue;
             prMap.merge(exerciseId, set, (existing, current) ->
                     current.getWeight().compareTo(existing.getWeight()) > 0 ? current : existing);
         }
 
-        // 5. 构建响应（动作名称需要查询exercise表，这里先用ID）
+        if (prMap.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 5. 批量查询动作信息（名称、演示图）
+        List<Long> exerciseIds = new ArrayList<>(prMap.keySet());
+        LambdaQueryWrapper<Exercise> exerciseWrapper = new LambdaQueryWrapper<>();
+        exerciseWrapper.in(Exercise::getId, exerciseIds)
+                       .select(Exercise::getId, Exercise::getName, Exercise::getDemoImageUrl);
+        List<Exercise> exerciseList = exerciseMapper.selectList(exerciseWrapper);
+        Map<Long, Exercise> exerciseMap = exerciseList.stream()
+                .collect(java.util.stream.Collectors.toMap(Exercise::getId, e -> e));
+
+        // 6. 构建响应
         List<PrRecordItem> result = new ArrayList<>();
         for (Map.Entry<Long, WorkoutLogSet> entry : prMap.entrySet()) {
+            Long exerciseId = entry.getKey();
+            WorkoutLogSet bestSet = entry.getValue();
+            Exercise exercise = exerciseMap.get(exerciseId);
+
             PrRecordItem item = new PrRecordItem();
-            item.setExerciseId(entry.getKey());
-            item.setExerciseName("动作#" + entry.getKey()); // TODO: 查询动作名称
-            item.setMaxWeight(entry.getValue().getWeight());
-            item.setReps(entry.getValue().getReps());
-            item.setAchievedDate(entry.getValue().getCreatedAt() != null ?
-                    entry.getValue().getCreatedAt().toLocalDate() : null);
+            item.setExerciseId(exerciseId);
+            item.setExerciseName(exercise != null ? exercise.getName() : "动作#" + exerciseId);
+            item.setDemoImageUrl(exercise != null ? exercise.getDemoImageUrl() : null);
+            item.setMaxWeight(bestSet.getWeight());
+            item.setReps(bestSet.getReps());
+            item.setAchievedDate(bestSet.getCreatedAt() != null ?
+                    bestSet.getCreatedAt().toLocalDate() : null);
             result.add(item);
         }
+
+        // 按最大重量降序排列
+        result.sort((a, b) -> b.getMaxWeight().compareTo(a.getMaxWeight()));
 
         return result;
     }
@@ -359,5 +438,21 @@ public class MiniAppWorkoutService {
             throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
+    }
+
+    /**
+     * 解析 reps 字符串为整数（支持 "10-12" 范围格式）
+     */
+    private Integer parseReps(String reps) {
+        if (reps == null || reps.isBlank()) return 12;
+        try {
+            // 处理范围格式 "10-12"，取第一个值
+            if (reps.contains("-")) {
+                return Integer.parseInt(reps.split("-")[0].trim());
+            }
+            return Integer.parseInt(reps.trim());
+        } catch (NumberFormatException e) {
+            return 12;
+        }
     }
 }
