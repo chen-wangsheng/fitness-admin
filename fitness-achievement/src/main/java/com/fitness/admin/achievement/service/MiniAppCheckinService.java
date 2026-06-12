@@ -13,6 +13,7 @@ import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.utils.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.session.SqlSession;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class MiniAppCheckinService {
     private final CheckinMapper checkinMapper;
     private final AchievementMapper achievementMapper;
     private final UserAchievementMapper userAchievementMapper;
+    private final SqlSession sqlSession;
 
     /**
      * 每日打卡
@@ -113,23 +115,64 @@ public class MiniAppCheckinService {
     }
 
     /**
-     * 获取成就列表
+     * 获取成就列表（动态计算解锁状态，自动补解锁历史遗漏的成就）
      */
+    @Transactional
     public AchievementListResponse getAchievements() {
         Long userId = getCurrentUserId();
 
-        // 查询所有成就
+        // 查询所有成就定义
         List<Achievement> allAchievements = achievementMapper.selectList(null);
 
-        // 查询用户已解锁的成就
+        // 查询用户已持久化解锁的成就
         LambdaQueryWrapper<UserAchievement> uaWrapper = new LambdaQueryWrapper<>();
         uaWrapper.eq(UserAchievement::getUserId, userId);
-        List<UserAchievement> unlocked = userAchievementMapper.selectList(uaWrapper);
-        Set<Long> unlockedIds = unlocked.stream()
+        Set<Long> persistedUnlockedIds = userAchievementMapper.selectList(uaWrapper).stream()
                 .map(UserAchievement::getAchievementId)
                 .collect(java.util.stream.Collectors.toSet());
 
-        // 按conditionType分组
+        // 从 workout_log 表动态计算用户训练指标
+        Map<String, Object> stats = computeWorkoutStats(userId);
+        int totalWorkouts = (int) stats.getOrDefault("totalWorkouts", 0);
+        int streakDays = (int) stats.getOrDefault("streakDays", 0);
+        double totalVolume = (double) stats.getOrDefault("totalVolume", 0.0);
+        int totalDurationMin = (int) stats.getOrDefault("totalDurationMin", 0);
+
+        // 动态计算每个成就是否应该解锁，并补写缺失的持久化记录
+        Set<Long> actualUnlockedIds = new HashSet<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Achievement a : allAchievements) {
+            boolean met = false;
+            String type = a.getConditionType() != null ? a.getConditionType() : "";
+            int target = a.getConditionValue() != null ? a.getConditionValue() : 0;
+
+            switch (type) {
+                case "total_workouts", "workout_count" -> met = totalWorkouts >= target;
+                case "streak_days" -> met = streakDays >= target;
+                case "total_volume" -> met = totalVolume >= target;
+                case "total_duration" -> met = totalDurationMin >= target;
+            }
+
+            if (met) {
+                actualUnlockedIds.add(a.getId());
+                // 补写持久化记录（如果之前未写入）
+                if (!persistedUnlockedIds.contains(a.getId())) {
+                    UserAchievement ua = new UserAchievement();
+                    ua.setUserId(userId);
+                    ua.setAchievementId(a.getId());
+                    ua.setUnlockedAt(now);
+                    try {
+                        userAchievementMapper.insert(ua);
+                    } catch (Exception e) {
+                        // 忽略唯一键冲突（并发场景）
+                        log.debug("成就解锁记录已存在，跳过: userId={}, achievementId={}", userId, a.getId());
+                    }
+                }
+            }
+        }
+
+        // 按 conditionType 分组
         Map<String, List<Achievement>> grouped = allAchievements.stream()
                 .collect(java.util.stream.Collectors.groupingBy(
                         a -> a.getConditionType() != null ? a.getConditionType() : "other"));
@@ -145,22 +188,97 @@ public class MiniAppCheckinService {
                 item.put("description", a.getDescription());
                 item.put("iconUrl", a.getIconUrl());
                 item.put("badgeColor", a.getBadgeColor());
-                item.put("unlocked", unlockedIds.contains(a.getId()));
+                item.put("unlocked", actualUnlockedIds.contains(a.getId()));
                 return item;
             }).toList());
             categories.add(category);
         }
 
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("total", allAchievements.size());
-        stats.put("unlocked", unlockedIds.size());
-        stats.put("progress", allAchievements.isEmpty() ? 0 :
-                (double) unlockedIds.size() / allAchievements.size() * 100);
+        Map<String, Object> statsResult = new HashMap<>();
+        statsResult.put("total", allAchievements.size());
+        statsResult.put("unlocked", actualUnlockedIds.size());
+        statsResult.put("progress", allAchievements.isEmpty() ? 0 :
+                Math.round((double) actualUnlockedIds.size() / allAchievements.size() * 100));
 
         AchievementListResponse response = new AchievementListResponse();
         response.setCategories(categories);
-        response.setStats(stats);
+        response.setStats(statsResult);
         return response;
+    }
+
+    /**
+     * 从 workout_log 表动态计算用户训练指标（通过原生 SQL，避免跨模块依赖）
+     */
+    private Map<String, Object> computeWorkoutStats(Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            java.sql.Connection conn = sqlSession.getConnection();
+            java.sql.PreparedStatement ps;
+            java.sql.ResultSet rs;
+
+            // 总训练次数
+            ps = conn.prepareStatement(
+                "SELECT COUNT(*) FROM workout_log WHERE user_id = ? AND status = 'completed'");
+            ps.setLong(1, userId);
+            rs = ps.executeQuery();
+            rs.next();
+            result.put("totalWorkouts", rs.getInt(1));
+            rs.close();
+            ps.close();
+
+            // 累计训练量(kg)
+            ps = conn.prepareStatement(
+                "SELECT COALESCE(SUM(total_volume_kg), 0) FROM workout_log WHERE user_id = ? AND status = 'completed'");
+            ps.setLong(1, userId);
+            rs = ps.executeQuery();
+            rs.next();
+            result.put("totalVolume", rs.getDouble(1));
+            rs.close();
+            ps.close();
+
+            // 累计训练时长(分钟)
+            ps = conn.prepareStatement(
+                "SELECT COALESCE(SUM(duration_min), 0) FROM workout_log WHERE user_id = ? AND status = 'completed'");
+            ps.setLong(1, userId);
+            rs = ps.executeQuery();
+            rs.next();
+            result.put("totalDurationMin", rs.getInt(1));
+            rs.close();
+            ps.close();
+
+            // 连续训练天数
+            ps = conn.prepareStatement(
+                "SELECT DISTINCT workout_date FROM workout_log WHERE user_id = ? AND status = 'completed' ORDER BY workout_date DESC");
+            ps.setLong(1, userId);
+            rs = ps.executeQuery();
+            int streak = 0;
+            java.time.LocalDate expected = java.time.LocalDate.now();
+            while (rs.next()) {
+                java.time.LocalDate date = rs.getDate(1).toLocalDate();
+                if (date.equals(expected)) {
+                    streak++;
+                    expected = expected.minusDays(1);
+                } else if (streak == 0 && date.isBefore(expected)) {
+                    // 今天还没训练，从最近的训练日开始算
+                    expected = date;
+                    streak++;
+                    expected = expected.minusDays(1);
+                } else {
+                    break;
+                }
+            }
+            result.put("streakDays", streak);
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            log.warn("计算训练指标失败", e);
+            result.putIfAbsent("totalWorkouts", 0);
+            result.putIfAbsent("totalVolume", 0.0);
+            result.putIfAbsent("totalDurationMin", 0);
+            result.putIfAbsent("streakDays", 0);
+        }
+        return result;
     }
 
     /**

@@ -2,6 +2,10 @@ package com.fitness.admin.workout.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fitness.admin.achievement.entity.Achievement;
+import com.fitness.admin.achievement.entity.UserAchievement;
+import com.fitness.admin.achievement.mapper.AchievementMapper;
+import com.fitness.admin.achievement.mapper.UserAchievementMapper;
 import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.result.PageResult;
@@ -32,6 +36,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 小程序训练服务
@@ -47,6 +52,8 @@ public class MiniAppWorkoutService {
     private final UserMapper userMapper;
     private final PlanDayExerciseMapper planDayExerciseMapper;
     private final ExerciseMapper exerciseMapper;
+    private final AchievementMapper achievementMapper;
+    private final UserAchievementMapper userAchievementMapper;
 
     /**
      * 开始训练
@@ -205,8 +212,8 @@ public class MiniAppWorkoutService {
 
         workoutLogMapper.updateById(workoutLog);
 
-        // TODO: 检查并解锁成就
-        List<AchievementInfo> achievements = new ArrayList<>();
+        // 检查并解锁成就
+        List<AchievementInfo> achievements = checkAndUnlockAchievements(userId);
 
         CompleteWorkoutResponse response = new CompleteWorkoutResponse();
         response.setWorkoutLogId(workoutLog.getId());
@@ -383,6 +390,82 @@ public class MiniAppWorkoutService {
         result.sort((a, b) -> b.getMaxWeight().compareTo(a.getMaxWeight()));
 
         return result;
+    }
+
+    /**
+     * 检查并解锁成就 — 根据用户当前训练数据判断是否满足成就条件
+     */
+    @Transactional
+    public List<AchievementInfo> checkAndUnlockAchievements(Long userId) {
+        // 查询所有成就定义
+        List<Achievement> allAchievements = achievementMapper.selectList(null);
+        if (allAchievements.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 查询用户已解锁的成就ID
+        LambdaQueryWrapper<UserAchievement> uaWrapper = new LambdaQueryWrapper<>();
+        uaWrapper.eq(UserAchievement::getUserId, userId);
+        Set<Long> unlockedIds = userAchievementMapper.selectList(uaWrapper).stream()
+                .map(UserAchievement::getAchievementId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 查询用户所有已完成的训练记录
+        LambdaQueryWrapper<WorkoutLog> logWrapper = new LambdaQueryWrapper<>();
+        logWrapper.eq(WorkoutLog::getUserId, userId)
+                  .eq(WorkoutLog::getStatus, "completed");
+        List<WorkoutLog> logs = workoutLogMapper.selectList(logWrapper);
+
+        // 计算各维度指标
+        int totalWorkouts = logs.size();
+        int streakDays = calculateStreakDays(userId);
+        BigDecimal totalVolume = logs.stream()
+                .map(l -> l.getTotalVolumeKg() != null ? l.getTotalVolumeKg() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        int totalDurationMin = logs.stream()
+                .mapToInt(l -> l.getDurationMin() != null ? l.getDurationMin() : 0)
+                .sum();
+
+        // 逐个成就检查，收集新解锁的成就
+        List<AchievementInfo> newlyUnlocked = new ArrayList<>();
+        List<UserAchievement> toInsert = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Achievement a : allAchievements) {
+            if (unlockedIds.contains(a.getId())) continue;
+
+            boolean met = switch (a.getConditionType()) {
+                case "total_workouts", "workout_count" -> totalWorkouts >= a.getConditionValue();
+                case "streak_days" -> streakDays >= a.getConditionValue();
+                case "total_volume" -> totalVolume.compareTo(BigDecimal.valueOf(a.getConditionValue())) >= 0;
+                case "total_duration" -> totalDurationMin >= a.getConditionValue();
+                default -> false;
+            };
+
+            if (met) {
+                UserAchievement ua = new UserAchievement();
+                ua.setUserId(userId);
+                ua.setAchievementId(a.getId());
+                ua.setUnlockedAt(now);
+                toInsert.add(ua);
+
+                AchievementInfo info = new AchievementInfo();
+                info.setId(a.getId());
+                info.setName(a.getName());
+                info.setDescription(a.getDescription());
+                info.setIconUrl(a.getIconUrl());
+                newlyUnlocked.add(info);
+
+                log.info("用户 {} 解锁成就: {} ({})", userId, a.getName(), a.getConditionType());
+            }
+        }
+
+        // 批量插入解锁记录
+        for (UserAchievement ua : toInsert) {
+            userAchievementMapper.insert(ua);
+        }
+
+        return newlyUnlocked;
     }
 
     /**
