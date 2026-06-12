@@ -1,6 +1,7 @@
 package com.fitness.admin.ai.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,9 +9,11 @@ import com.fitness.admin.ai.dto.*;
 import com.fitness.admin.ai.entity.AiChatMessage;
 import com.fitness.admin.ai.entity.AiChatSession;
 import com.fitness.admin.ai.entity.AiPlan;
+import com.fitness.admin.ai.entity.AiUsageDaily;
 import com.fitness.admin.ai.mapper.AiChatMessageMapper;
 import com.fitness.admin.ai.mapper.AiChatSessionMapper;
 import com.fitness.admin.ai.mapper.AiPlanMapper;
+import com.fitness.admin.ai.mapper.AiUsageDailyMapper;
 import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.result.PageResult;
@@ -26,6 +29,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -40,6 +46,7 @@ public class MiniAppAiService {
     private final AiChatSessionMapper sessionMapper;
     private final AiChatMessageMapper messageMapper;
     private final AiPlanMapper planMapper;
+    private final AiUsageDailyMapper aiUsageDailyMapper;
 
     private final AiService aiService;
     private final ObjectMapper objectMapper;
@@ -105,6 +112,9 @@ public class MiniAppAiService {
         session.setMessageCount(session.getMessageCount() + 1);
         session.setUpdatedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
+
+        // 实时更新今日AI使用统计
+        upsertTodayUsage();
 
         ChatResponse response = new ChatResponse();
         response.setSessionId(session.getId());
@@ -249,6 +259,9 @@ public class MiniAppAiService {
         aiPlan.setCreatedAt(LocalDateTime.now());
         aiPlan.setUpdatedAt(LocalDateTime.now());
         planMapper.insert(aiPlan);
+
+        // 实时更新今日AI使用统计
+        upsertTodayUsage();
 
         // 构建响应
         GeneratePlanResponse response = new GeneratePlanResponse();
@@ -420,6 +433,9 @@ public class MiniAppAiService {
         aiPlan.setCreatedAt(LocalDateTime.now());
         aiPlan.setUpdatedAt(LocalDateTime.now());
         planMapper.insert(aiPlan);
+
+        // 实时更新今日AI使用统计
+        upsertTodayUsage();
 
         GeneratePlanResponse response = new GeneratePlanResponse();
         response.setAiPlanId(aiPlan.getId());
@@ -769,5 +785,125 @@ public class MiniAppAiService {
             throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
+    }
+
+    /**
+     * 实时更新今日AI使用统计（upsert ai_usage_daily）
+     * 从原始业务表实时聚合当天数据，确保数据看板能看到当日实时数据
+     */
+    private void upsertTodayUsage() {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDateTime dayStart = today.atStartOfDay();
+            LocalDateTime dayEnd = today.atTime(23, 59, 59);
+
+            // 统计当天会话数
+            Long chatSessions = sessionMapper.selectCount(
+                    Wrappers.<AiChatSession>lambdaQuery()
+                            .between(AiChatSession::getCreatedAt, dayStart, dayEnd)
+            );
+
+            // 统计当天消息
+            List<AiChatMessage> dayMessages = messageMapper.selectList(
+                    Wrappers.<AiChatMessage>lambdaQuery()
+                            .between(AiChatMessage::getCreatedAt, dayStart, dayEnd)
+            );
+            int totalMessages = dayMessages.size();
+
+            // 统计反馈
+            int positiveFeedback = 0;
+            int negativeFeedback = 0;
+            for (AiChatMessage msg : dayMessages) {
+                if (msg.getFeedback() != null) {
+                    if (msg.getFeedback() > 0) positiveFeedback++;
+                    else if (msg.getFeedback() < 0) negativeFeedback++;
+                }
+            }
+
+            int feedbackTotal = positiveFeedback + negativeFeedback;
+            BigDecimal satisfactionRate = feedbackTotal > 0
+                    ? BigDecimal.valueOf(positiveFeedback)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(feedbackTotal), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            // Token使用量
+            long totalTokens = dayMessages.stream()
+                    .filter(m -> "assistant".equals(m.getRole()) && m.getTokenCount() != null)
+                    .mapToLong(AiChatMessage::getTokenCount)
+                    .sum();
+
+            // 计划数
+            Long planGenerated = planMapper.selectCount(
+                    Wrappers.<AiPlan>lambdaQuery()
+                            .between(AiPlan::getCreatedAt, dayStart, dayEnd)
+            );
+            Long planConfirmed = planMapper.selectCount(
+                    Wrappers.<AiPlan>lambdaQuery()
+                            .eq(AiPlan::getStatus, "confirmed")
+                            .between(AiPlan::getCreatedAt, dayStart, dayEnd)
+            );
+
+            // RAG命中率
+            long assistantMessages = dayMessages.stream()
+                    .filter(m -> "assistant".equals(m.getRole()))
+                    .count();
+            long ragHitMessages = dayMessages.stream()
+                    .filter(m -> "assistant".equals(m.getRole())
+                            && m.getRagRefs() != null && !m.getRagRefs().isBlank())
+                    .count();
+            BigDecimal ragHitRate = assistantMessages > 0
+                    ? BigDecimal.valueOf(ragHitMessages)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(assistantMessages), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            // 平均响应时间估算
+            int avgResponseTimeMs = 0;
+            if (assistantMessages > 0) {
+                long avgTokens = dayMessages.stream()
+                        .filter(m -> "assistant".equals(m.getRole()) && m.getTokenCount() != null)
+                        .mapToLong(AiChatMessage::getTokenCount)
+                        .sum() / Math.max(assistantMessages, 1);
+                avgResponseTimeMs = (int) (avgTokens * 10);
+            }
+
+            // 写入或更新
+            AiUsageDaily existing = aiUsageDailyMapper.selectOne(
+                    Wrappers.<AiUsageDaily>lambdaQuery()
+                            .eq(AiUsageDaily::getStatDate, today)
+            );
+
+            if (existing != null) {
+                existing.setTotalChatSessions(chatSessions.intValue());
+                existing.setTotalChatMessages(totalMessages);
+                existing.setTotalPlanGenerated(planGenerated.intValue());
+                existing.setTotalPlanConfirmed(planConfirmed.intValue());
+                existing.setTotalTokensUsed(totalTokens);
+                existing.setPositiveFeedbackCount(positiveFeedback);
+                existing.setNegativeFeedbackCount(negativeFeedback);
+                existing.setSatisfactionRate(satisfactionRate);
+                existing.setAvgResponseTimeMs(avgResponseTimeMs);
+                existing.setRagHitRate(ragHitRate);
+                aiUsageDailyMapper.updateById(existing);
+            } else {
+                AiUsageDaily record = new AiUsageDaily();
+                record.setStatDate(today);
+                record.setTotalChatSessions(chatSessions.intValue());
+                record.setTotalChatMessages(totalMessages);
+                record.setTotalPlanGenerated(planGenerated.intValue());
+                record.setTotalPlanConfirmed(planConfirmed.intValue());
+                record.setTotalTokensUsed(totalTokens);
+                record.setPositiveFeedbackCount(positiveFeedback);
+                record.setNegativeFeedbackCount(negativeFeedback);
+                record.setSatisfactionRate(satisfactionRate);
+                record.setAvgResponseTimeMs(avgResponseTimeMs);
+                record.setRagHitRate(ragHitRate);
+                record.setCreatedAt(LocalDateTime.now());
+                aiUsageDailyMapper.insert(record);
+            }
+        } catch (Exception e) {
+            log.warn("实时更新AI使用统计失败，将由定时任务补偿: {}", e.getMessage());
+        }
     }
 }
