@@ -28,9 +28,14 @@ public class AiChatMonitorService {
     private final AiChatMessageMapper aiChatMessageMapper;
     private final AiChatIssueMapper aiChatIssueMapper;
 
-    public Page<AiChatSession> querySessionPage(Integer pageNum, Integer pageSize) {
+    public Page<AiChatSession> querySessionPage(Integer pageNum, Integer pageSize, Long userId) {
         Page<AiChatSession> page = new Page<>(pageNum, pageSize);
-        return aiChatSessionMapper.selectPage(page, null);
+        LambdaQueryWrapper<AiChatSession> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) {
+            wrapper.eq(AiChatSession::getUserId, userId);
+        }
+        wrapper.orderByDesc(AiChatSession::getUpdatedAt);
+        return aiChatSessionMapper.selectPage(page, wrapper);
     }
 
     public Page<AiChatMessage> queryMessagePage(Long sessionId, Integer pageNum, Integer pageSize) {

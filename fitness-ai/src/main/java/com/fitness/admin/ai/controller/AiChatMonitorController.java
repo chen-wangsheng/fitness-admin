@@ -29,8 +29,9 @@ public class AiChatMonitorController extends BaseController {
     @Operation(summary = "会话列表")
     @GetMapping("/sessions")
     public R<PageResult<AiChatSession>> sessions(@RequestParam(defaultValue = "1") Integer pageNum,
-                                                 @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<AiChatSession> page = aiChatMonitorService.querySessionPage(pageNum, pageSize);
+                                                 @RequestParam(defaultValue = "10") Integer pageSize,
+                                                 @RequestParam(required = false) Long userId) {
+        Page<AiChatSession> page = aiChatMonitorService.querySessionPage(pageNum, pageSize, userId);
         return page((Page) page);
     }
 
