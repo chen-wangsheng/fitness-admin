@@ -30,12 +30,28 @@ public class AdminRoleController extends BaseController {
         return page(page);
     }
 
+    @Operation(summary = "角色详情")
+    @GetMapping("/{id}")
+    public R<AdminRole> detail(@PathVariable Long id) {
+        return R.ok(adminRoleService.getById(id));
+    }
+
     @LogOperation(action = "新增", module = "角色管理")
     @Operation(summary = "保存角色")
     @PostMapping
     @SaCheckPermission("admin:role:create")
     public R<Void> save(@RequestBody AdminRole role) {
-        adminRoleService.save(role);
+        adminRoleService.saveWithPermissions(role);
+        return success();
+    }
+
+    @LogOperation(action = "编辑", module = "角色管理")
+    @Operation(summary = "更新角色")
+    @PutMapping("/{id}")
+    @SaCheckPermission("admin:role:update")
+    public R<Void> update(@PathVariable Long id, @RequestBody AdminRole role) {
+        role.setId(id);
+        adminRoleService.saveWithPermissions(role);
         return success();
     }
 
