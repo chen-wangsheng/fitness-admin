@@ -10,7 +10,10 @@ import com.fitness.admin.community.service.CommunityCommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @Tag(name = "评论管理")
 @RestController
@@ -24,8 +27,14 @@ public class CommunityCommentController extends BaseController {
     @Operation(summary = "评论列表")
     @GetMapping("/list")
     public R<PageResult<CommunityComment>> list(@RequestParam(defaultValue = "1") Integer pageNum,
-                                                @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<CommunityComment> page = communityCommentService.queryPage(pageNum, pageSize);
+                                                @RequestParam(defaultValue = "10") Integer pageSize,
+                                                @RequestParam(required = false) Long postId,
+                                                @RequestParam(required = false) Long userId,
+                                                @RequestParam(required = false)
+                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startDate,
+                                                @RequestParam(required = false)
+                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endDate) {
+        Page<CommunityComment> page = communityCommentService.queryPage(pageNum, pageSize, postId, userId, startDate, endDate);
         return page(page);
     }
 
@@ -34,6 +43,14 @@ public class CommunityCommentController extends BaseController {
     @SaCheckPermission("comment:update")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Integer> body) {
         communityCommentService.updateStatus(id, body.get("status"));
+        return success();
+    }
+
+    @Operation(summary = "删除评论")
+    @DeleteMapping("/{id}")
+    @SaCheckPermission("comment:delete")
+    public R<Void> delete(@PathVariable Long id) {
+        communityCommentService.delete(id);
         return success();
     }
 }

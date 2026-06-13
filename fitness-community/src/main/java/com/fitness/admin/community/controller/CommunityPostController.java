@@ -10,7 +10,10 @@ import com.fitness.admin.community.service.CommunityPostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @Tag(name = "社区动态管理")
 @RestController
@@ -24,9 +27,21 @@ public class CommunityPostController extends BaseController {
     @Operation(summary = "动态列表")
     @GetMapping("/list")
     public R<PageResult<CommunityPost>> list(@RequestParam(defaultValue = "1") Integer pageNum,
-                                             @RequestParam(defaultValue = "10") Integer pageSize) {
-        Page<CommunityPost> page = communityPostService.queryPage(pageNum, pageSize);
+                                             @RequestParam(defaultValue = "10") Integer pageSize,
+                                             @RequestParam(required = false) Long userId,
+                                             @RequestParam(required = false) Integer status,
+                                             @RequestParam(required = false)
+                                             @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startDate,
+                                             @RequestParam(required = false)
+                                             @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endDate) {
+        Page<CommunityPost> page = communityPostService.queryPage(pageNum, pageSize, userId, status, startDate, endDate);
         return page(page);
+    }
+
+    @Operation(summary = "动态详情")
+    @GetMapping("/{id}")
+    public R<CommunityPost> detail(@PathVariable Long id) {
+        return success(communityPostService.getById(id));
     }
 
     @Operation(summary = "更新状态")
