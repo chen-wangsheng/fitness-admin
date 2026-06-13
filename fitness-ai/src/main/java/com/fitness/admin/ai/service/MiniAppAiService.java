@@ -32,6 +32,10 @@ public class MiniAppAiService {
         return chatService.sendChatMessage(request);
     }
 
+    public ChatResponse pollMessage(Long messageId) {
+        return chatService.pollMessage(messageId);
+    }
+
     public PageResult<AiChatMessage> getChatMessages(Long sessionId, Integer pageNum, Integer pageSize) {
         return chatService.getChatMessages(sessionId, pageNum, pageSize);
     }

@@ -15,4 +15,9 @@ public class ChatResponse {
     private String content;
     /** token消耗量 */
     private Integer tokenCount;
+    /**
+     * 消息状态(异步模式): 1-processing 2-completed 3-failed
+     * 同步模式下始终为 2-completed
+     */
+    private Integer status;
 }

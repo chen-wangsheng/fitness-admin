@@ -33,6 +33,12 @@ public class MiniAppAiController extends BaseController {
         return success(miniAppAiService.sendChatMessage(request));
     }
 
+    @Operation(summary = "轮询AI消息状态(异步模式)")
+    @GetMapping("/chat/messages/{messageId}/status")
+    public R<ChatResponse> pollMessage(@PathVariable Long messageId) {
+        return success(miniAppAiService.pollMessage(messageId));
+    }
+
     @Operation(summary = "会话消息列表")
     @GetMapping("/chat/{sessionId}/messages")
     public R<PageResult<AiChatMessage>> getChatMessages(

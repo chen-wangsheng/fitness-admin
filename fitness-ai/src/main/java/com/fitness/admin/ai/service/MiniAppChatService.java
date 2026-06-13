@@ -3,6 +3,7 @@ package com.fitness.admin.ai.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fitness.admin.ai.config.AiConfig;
 import com.fitness.admin.ai.dto.*;
 import com.fitness.admin.ai.entity.AiChatMessage;
 import com.fitness.admin.ai.entity.AiChatSession;
@@ -24,6 +25,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 小程序 AI 对话服务。
@@ -42,6 +45,19 @@ public class MiniAppChatService {
     private final AiService aiService;
     private final AiRateLimiter rateLimiter;
     private final AiTimeoutGuard timeoutGuard;
+    private final AiConfig aiConfig;
+
+    private static final int STATUS_PROCESSING = 1;
+    private static final int STATUS_COMPLETED = 2;
+    private static final int STATUS_FAILED = 3;
+
+    private static final ExecutorService ASYNC_CHAT_POOL = Executors.newFixedThreadPool(
+            Math.max(2, Runtime.getRuntime().availableProcessors()),
+            r -> {
+                Thread t = new Thread(r, "ai-chat-async");
+                t.setDaemon(true);
+                return t;
+            });
 
     public ChatResponse sendChatMessage(ChatRequest request) {
         Long userId = getCurrentUserId();
@@ -71,21 +87,13 @@ public class MiniAppChatService {
         session.setUpdatedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
 
-        List<AiService.ChatMessage> chatMessages = buildChatMessages(session.getId());
-
-        String aiResponse;
-        try {
-            aiResponse = timeoutGuard.call(() -> aiService.chat(chatMessages));
-        } catch (Exception e) {
-            log.error("AI服务调用失败,使用备用响应", e);
-            aiResponse = "抱歉,AI服务暂时不可用,请稍后再试。错误信息:" + e.getMessage();
-        }
-
+        // 预占位 AI 消息(状态=processing),客户端拿到 messageId 后即可轮询
         AiChatMessage aiMessage = new AiChatMessage();
         aiMessage.setSessionId(session.getId());
         aiMessage.setRole("assistant");
-        aiMessage.setContent(aiResponse);
-        aiMessage.setTokenCount(aiResponse.length());
+        aiMessage.setContent("");
+        aiMessage.setTokenCount(0);
+        aiMessage.setStreamStatus(STATUS_PROCESSING);
         aiMessage.setCreatedAt(LocalDateTime.now());
         messageMapper.insert(aiMessage);
 
@@ -93,14 +101,100 @@ public class MiniAppChatService {
         session.setUpdatedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
 
-        upsertTodayUsage();
-
         ChatResponse response = new ChatResponse();
         response.setSessionId(session.getId());
         response.setMessageId(aiMessage.getId());
-        response.setContent(aiResponse);
-        response.setTokenCount(aiMessage.getTokenCount());
+        response.setContent("");
+        response.setStatus(STATUS_PROCESSING);
+        response.setTokenCount(0);
+
+        // 异步开关关闭时,直接同步调用(保持旧行为,便于回归测试)
+        Boolean asyncEnabled = aiConfig.getAsyncChatEnabled();
+        if (Boolean.FALSE.equals(asyncEnabled)) {
+            runAiCallSync(aiMessage.getId(), session.getId());
+            response.setStatus(STATUS_COMPLETED);
+            AiChatMessage latest = messageMapper.selectById(aiMessage.getId());
+            if (latest != null) {
+                response.setContent(latest.getContent());
+                response.setTokenCount(latest.getTokenCount());
+            }
+            return response;
+        }
+
+        // 异步模式:提交后台任务后立即返回
+        submitAsync(aiMessage.getId(), session.getId());
         return response;
+    }
+
+    /**
+     * 客户端轮询消息状态。返回当前消息(可能仍为 processing,也可能已完成/失败)。
+     */
+    public ChatResponse pollMessage(Long messageId) {
+        Long userId = getCurrentUserId();
+        AiChatMessage msg = messageMapper.selectById(messageId);
+        if (msg == null) {
+            throw new BizException("消息不存在");
+        }
+        AiChatSession session = sessionMapper.selectById(msg.getSessionId());
+        if (session == null || !session.getUserId().equals(userId)) {
+            throw new BizException("消息不存在");
+        }
+
+        ChatResponse response = new ChatResponse();
+        response.setSessionId(msg.getSessionId());
+        response.setMessageId(msg.getId());
+        response.setContent(msg.getContent() != null ? msg.getContent() : "");
+        response.setTokenCount(msg.getTokenCount() != null ? msg.getTokenCount() : 0);
+        response.setStatus(msg.getStreamStatus() != null ? msg.getStreamStatus() : STATUS_COMPLETED);
+        return response;
+    }
+
+    private void submitAsync(Long messageId, Long sessionId) {
+        try {
+            ASYNC_CHAT_POOL.submit(() -> runAiCallSync(messageId, sessionId));
+        } catch (Exception e) {
+            log.error("提交 AI 异步任务失败,降级为同步处理: messageId={}", messageId, e);
+            runAiCallSync(messageId, sessionId);
+        }
+    }
+
+    /**
+     * 执行真实的 AI 调用并把结果写回 ai_chat_message.streamStatus。
+     * 同步方法,可被同步或异步两种模式复用。
+     */
+    private void runAiCallSync(Long messageId, Long sessionId) {
+        try {
+            List<AiService.ChatMessage> chatMessages = buildChatMessages(sessionId);
+            int timeoutSec = aiConfig.getAsyncChatTimeoutSeconds() != null
+                    ? aiConfig.getAsyncChatTimeoutSeconds() : 90;
+
+            String aiResponse = timeoutGuard.callWithTimeout(timeoutSec, () -> aiService.chat(chatMessages));
+            finalizeMessage(messageId, sessionId, aiResponse, STATUS_COMPLETED);
+        } catch (Exception e) {
+            log.error("AI服务调用失败: messageId={}", messageId, e);
+            String errMsg = "抱歉,AI服务暂时不可用,请稍后再试。";
+            finalizeMessage(messageId, sessionId, errMsg, STATUS_FAILED);
+        }
+    }
+
+    private void finalizeMessage(Long messageId, Long sessionId, String content, int status) {
+        try {
+            AiChatMessage msg = messageMapper.selectById(messageId);
+            if (msg == null) {
+                log.warn("异步任务结束时消息已不存在: messageId={}", messageId);
+                return;
+            }
+            msg.setContent(content);
+            msg.setTokenCount(content != null ? content.length() : 0);
+            msg.setStreamStatus(status);
+            messageMapper.updateById(msg);
+
+            if (status == STATUS_COMPLETED) {
+                upsertTodayUsage();
+            }
+        } catch (Exception e) {
+            log.error("写回 AI 消息结果失败: messageId={}, status={}", messageId, status, e);
+        }
     }
 
     public PageResult<AiChatMessage> getChatMessages(Long sessionId, Integer pageNum, Integer pageSize) {
@@ -154,10 +248,11 @@ public class MiniAppChatService {
         messages.add(new AiService.ChatMessage("system",
                 "你是一个专业的AI健身助手,名叫FitBot。你擅长制定训练计划、解答健身问题、提供营养建议。请用友好专业的语气回答。"));
 
+        int historyLimit = aiConfig.getChatHistoryLimit() != null ? aiConfig.getChatHistoryLimit() : 6;
         LambdaQueryWrapper<AiChatMessage> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AiChatMessage::getSessionId, sessionId)
                .orderByDesc(AiChatMessage::getCreatedAt)
-               .last("LIMIT 20");
+               .last("LIMIT " + historyLimit);
         List<AiChatMessage> history = messageMapper.selectList(wrapper);
 
         for (int i = history.size() - 1; i >= 0; i--) {
