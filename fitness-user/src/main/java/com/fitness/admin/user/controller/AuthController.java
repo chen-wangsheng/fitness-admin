@@ -1,5 +1,7 @@
 package com.fitness.admin.user.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
+import cn.dev33.satoken.annotation.SaIgnore;
 import com.fitness.admin.common.annotation.LogOperation;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
@@ -24,6 +26,7 @@ public class AuthController extends BaseController {
 
     @Operation(summary = "用户登录")
     @PostMapping("/login")
+    @SaIgnore
     public R<LoginResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         return success(authService.login(request, httpRequest));
     }
@@ -31,6 +34,7 @@ public class AuthController extends BaseController {
     @LogOperation(action = "登出", module = "认证管理")
     @Operation(summary = "用户登出")
     @PostMapping("/logout")
+    @SaCheckLogin
     public R<Void> logout() {
         authService.logout();
         return success();
@@ -38,12 +42,14 @@ public class AuthController extends BaseController {
 
     @Operation(summary = "刷新Token")
     @PostMapping("/refresh")
+    @SaCheckLogin
     public R<LoginResponse> refreshToken() {
         return success(authService.refreshToken());
     }
 
     @Operation(summary = "获取当前用户信息")
     @GetMapping("/profile")
+    @SaCheckLogin
     public R<LoginResponse.UserInfo> profile() {
         return success(authService.getCurrentUserInfo());
     }
@@ -51,6 +57,7 @@ public class AuthController extends BaseController {
     @LogOperation(action = "修改密码", module = "认证管理")
     @Operation(summary = "修改密码")
     @PutMapping("/password")
+    @SaCheckLogin
     public R<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         authService.changePassword(request.getOldPassword(), request.getNewPassword());
         return success();

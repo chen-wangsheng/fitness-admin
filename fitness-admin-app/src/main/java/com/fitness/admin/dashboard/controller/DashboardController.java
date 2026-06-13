@@ -1,5 +1,6 @@
 package com.fitness.admin.dashboard.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.dashboard.service.DashboardService;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/dashboard")
 @RequiredArgsConstructor
+@SaCheckPermission("dashboard:read")
 public class DashboardController extends BaseController {
 
     private final DashboardService dashboardService;

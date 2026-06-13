@@ -1,5 +1,6 @@
 package com.fitness.admin.system.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.system.entity.Announcement;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/miniapp/announcement")
 @RequiredArgsConstructor
+@SaCheckLogin
 public class MiniAppAnnouncementController extends BaseController {
 
     private final MiniAppAnnouncementService miniAppAnnouncementService;

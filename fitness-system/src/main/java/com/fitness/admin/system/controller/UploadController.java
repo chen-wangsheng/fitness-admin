@@ -1,5 +1,6 @@
 package com.fitness.admin.system.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.system.service.QiniuOssService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/upload")
 @RequiredArgsConstructor
+@SaCheckLogin
 public class UploadController {
 
     private final QiniuOssService qiniuOssService;

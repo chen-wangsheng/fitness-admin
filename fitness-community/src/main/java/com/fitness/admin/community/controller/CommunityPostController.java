@@ -1,5 +1,6 @@
 package com.fitness.admin.community.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/community-post")
 @RequiredArgsConstructor
+@SaCheckPermission("community:read")
 public class CommunityPostController extends BaseController {
 
     private final CommunityPostService communityPostService;
@@ -24,11 +26,12 @@ public class CommunityPostController extends BaseController {
     public R<PageResult<CommunityPost>> list(@RequestParam(defaultValue = "1") Integer pageNum,
                                              @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<CommunityPost> page = communityPostService.queryPage(pageNum, pageSize);
-        return page((Page) page);
+        return page(page);
     }
 
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
+    @SaCheckPermission("community:update")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Integer> body) {
         communityPostService.updateStatus(id, body.get("status"));
         return success();

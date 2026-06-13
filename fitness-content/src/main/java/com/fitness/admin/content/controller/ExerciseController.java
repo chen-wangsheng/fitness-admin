@@ -1,5 +1,6 @@
 package com.fitness.admin.content.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -22,6 +23,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/exercise")
 @RequiredArgsConstructor
+@SaCheckPermission("exercise:read")
 public class ExerciseController extends BaseController {
 
     private final ExerciseService exerciseService;
@@ -49,6 +51,7 @@ public class ExerciseController extends BaseController {
     @LogOperation(action = "新增", module = "动作管理")
     @Operation(summary = "创建动作")
     @PostMapping
+    @SaCheckPermission("exercise:create")
     public R<Void> create(@RequestBody ExerciseCreateDTO createDTO) {
         exerciseService.create(createDTO);
         return success();
@@ -57,6 +60,7 @@ public class ExerciseController extends BaseController {
     @LogOperation(action = "编辑", module = "动作管理")
     @Operation(summary = "更新动作")
     @PutMapping("/{id}")
+    @SaCheckPermission("exercise:update")
     public R<Void> update(@PathVariable Long id, @RequestBody ExerciseCreateDTO updateDTO) {
         exerciseService.update(id, updateDTO);
         return success();
@@ -65,6 +69,7 @@ public class ExerciseController extends BaseController {
     @LogOperation(action = "删除", module = "动作管理")
     @Operation(summary = "删除动作")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("exercise:delete")
     public R<Void> delete(@PathVariable Long id) {
         exerciseService.delete(id);
         return success();

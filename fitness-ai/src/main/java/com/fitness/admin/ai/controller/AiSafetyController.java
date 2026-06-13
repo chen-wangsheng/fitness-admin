@@ -1,5 +1,6 @@
 package com.fitness.admin.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
@@ -12,15 +13,18 @@ import com.fitness.admin.ai.service.AiSafetyRuleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Tag(name = "AI安全与Prompt")
 @RestController
 @RequestMapping("/ai-safety")
 @RequiredArgsConstructor
+@SaCheckPermission("ai:safety:read")
 public class AiSafetyController extends BaseController {
 
     private final AiSafetyRuleService aiSafetyRuleService;
@@ -31,7 +35,7 @@ public class AiSafetyController extends BaseController {
     public R<PageResult<AiSafetyRule>> rules(@RequestParam(defaultValue = "1") Integer pageNum,
                                              @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<AiSafetyRule> page = aiSafetyRuleService.queryPage(pageNum, pageSize);
-        return page((Page) page);
+        return page(page);
     }
 
     @Operation(summary = "规则详情")
@@ -42,6 +46,7 @@ public class AiSafetyController extends BaseController {
 
     @Operation(summary = "保存安全规则")
     @PostMapping("/rule")
+    @SaCheckPermission("ai:safety:create")
     public R<Void> saveRule(@RequestBody AiSafetyRule rule) {
         aiSafetyRuleService.save(rule);
         return success();
@@ -49,6 +54,7 @@ public class AiSafetyController extends BaseController {
 
     @Operation(summary = "更新安全规则")
     @PutMapping("/rule/{id}")
+    @SaCheckPermission("ai:safety:update")
     public R<Void> updateRule(@PathVariable Long id, @RequestBody AiSafetyRule rule) {
         rule.setId(id);
         aiSafetyRuleService.save(rule);
@@ -57,6 +63,7 @@ public class AiSafetyController extends BaseController {
 
     @Operation(summary = "删除安全规则")
     @DeleteMapping("/rule/{id}")
+    @SaCheckPermission("ai:safety:delete")
     public R<Void> deleteRule(@PathVariable Long id) {
         aiSafetyRuleService.delete(id);
         return success();
@@ -83,7 +90,9 @@ public class AiSafetyController extends BaseController {
             } else if ("regex".equals(rule.getMatchMode())) {
                 try {
                     hit = Pattern.compile(rule.getPattern()).matcher(text).find();
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    // 规则 regex 非法,记日志后跳过该规则(非业务关键)
+                    log.warn("AI safety rule #{} pattern invalid: {}", rule.getId(), e.getMessage());
                 }
             }
             if (hit) {
@@ -121,11 +130,12 @@ public class AiSafetyController extends BaseController {
     public R<PageResult<AiPromptTemplate>> prompts(@RequestParam(defaultValue = "1") Integer pageNum,
                                                    @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<AiPromptTemplate> page = aiPromptTemplateService.queryPage(pageNum, pageSize);
-        return page((Page) page);
+        return page(page);
     }
 
     @Operation(summary = "保存Prompt模板")
     @PostMapping("/prompt")
+    @SaCheckPermission("ai:prompt:update")
     public R<Void> savePrompt(@RequestBody AiPromptTemplate template) {
         aiPromptTemplateService.save(template);
         return success();
@@ -133,6 +143,7 @@ public class AiSafetyController extends BaseController {
 
     @Operation(summary = "删除Prompt模板")
     @DeleteMapping("/prompt/{id}")
+    @SaCheckPermission("ai:prompt:update")
     public R<Void> deletePrompt(@PathVariable Long id) {
         aiPromptTemplateService.delete(id);
         return success();
@@ -146,6 +157,7 @@ public class AiSafetyController extends BaseController {
 
     @Operation(summary = "更新Prompt模板")
     @PutMapping("/prompt/{id}")
+    @SaCheckPermission("ai:prompt:update")
     public R<Void> updatePrompt(@PathVariable Long id, @RequestBody AiPromptTemplate template) {
         template.setId(id);
         aiPromptTemplateService.save(template);
@@ -154,6 +166,7 @@ public class AiSafetyController extends BaseController {
 
     @Operation(summary = "激活Prompt模板")
     @PutMapping("/prompt/{id}/activate")
+    @SaCheckPermission("ai:prompt:update")
     public R<Void> activatePrompt(@PathVariable Long id) {
         aiPromptTemplateService.activate(id);
         return success();
@@ -167,6 +180,7 @@ public class AiSafetyController extends BaseController {
 
     @Operation(summary = "回滚Prompt模板")
     @PostMapping("/prompt/{id}/rollback")
+    @SaCheckPermission("ai:prompt:update")
     public R<Void> rollbackPrompt(@PathVariable Long id) {
         aiPromptTemplateService.rollback(id);
         return success();

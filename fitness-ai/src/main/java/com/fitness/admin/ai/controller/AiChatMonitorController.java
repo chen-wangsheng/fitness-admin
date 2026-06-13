@@ -1,5 +1,6 @@
 package com.fitness.admin.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/ai-chat")
 @RequiredArgsConstructor
+@SaCheckPermission("ai:chat:read")
 public class AiChatMonitorController extends BaseController {
 
     private final AiChatMonitorService aiChatMonitorService;
@@ -32,7 +34,7 @@ public class AiChatMonitorController extends BaseController {
                                                  @RequestParam(defaultValue = "10") Integer pageSize,
                                                  @RequestParam(required = false) Long userId) {
         Page<AiChatSession> page = aiChatMonitorService.querySessionPage(pageNum, pageSize, userId);
-        return page((Page) page);
+        return page(page);
     }
 
     @Operation(summary = "会话详情")
@@ -47,7 +49,7 @@ public class AiChatMonitorController extends BaseController {
                                                  @RequestParam(defaultValue = "1") Integer pageNum,
                                                  @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<AiChatMessage> page = aiChatMonitorService.queryMessagePage(sessionId, pageNum, pageSize);
-        return page((Page) page);
+        return page(page);
     }
 
     @Operation(summary = "反馈统计")

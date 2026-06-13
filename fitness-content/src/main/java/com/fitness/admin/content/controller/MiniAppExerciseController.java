@@ -1,5 +1,6 @@
 package com.fitness.admin.content.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.content.dto.FavoriteCheckResponse;
@@ -21,6 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/miniapp/exercise")
 @RequiredArgsConstructor
+@SaCheckLogin
 public class MiniAppExerciseController extends BaseController {
 
     private final MiniAppExerciseService miniAppExerciseService;

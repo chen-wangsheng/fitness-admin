@@ -1,5 +1,6 @@
 package com.fitness.admin.content.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.content.entity.ExerciseCategory;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/category")
 @RequiredArgsConstructor
+@SaCheckPermission("category:read")
 public class CategoryController extends BaseController {
 
     private final CategoryService categoryService;
@@ -29,6 +31,7 @@ public class CategoryController extends BaseController {
     @LogOperation(action = "新增", module = "分类管理")
     @Operation(summary = "保存分类")
     @PostMapping
+    @SaCheckPermission("category:create")
     public R<Void> save(@RequestBody ExerciseCategory category) {
         categoryService.save(category);
         return success();
@@ -37,6 +40,7 @@ public class CategoryController extends BaseController {
     @LogOperation(action = "编辑", module = "分类管理")
     @Operation(summary = "更新分类")
     @PutMapping("/{id}")
+    @SaCheckPermission("category:update")
     public R<Void> update(@PathVariable Long id, @RequestBody ExerciseCategory category) {
         category.setId(id);
         categoryService.save(category);
@@ -46,6 +50,7 @@ public class CategoryController extends BaseController {
     @LogOperation(action = "删除", module = "分类管理")
     @Operation(summary = "删除分类")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("category:delete")
     public R<Void> delete(@PathVariable Long id) {
         categoryService.delete(id);
         return success();

@@ -1,5 +1,6 @@
 package com.fitness.admin.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/ai-knowledge")
 @RequiredArgsConstructor
+@SaCheckPermission("ai:knowledge:read")
 public class AiKnowledgeController extends BaseController {
 
     private final AiKnowledgeService aiKnowledgeService;
@@ -31,7 +33,7 @@ public class AiKnowledgeController extends BaseController {
     public R<PageResult<KnowledgeBase>> list(@RequestParam(defaultValue = "1") Integer pageNum,
                                              @RequestParam(defaultValue = "10") Integer pageSize) {
         Page<KnowledgeBase> page = aiKnowledgeService.queryPage(pageNum, pageSize);
-        return page((Page) page);
+        return page(page);
     }
 
     @Operation(summary = "知识详情")
@@ -63,6 +65,7 @@ public class AiKnowledgeController extends BaseController {
 
     @Operation(summary = "新增知识")
     @PostMapping
+    @SaCheckPermission("ai:knowledge:create")
     public R<Void> save(@RequestBody KnowledgeBase knowledgeBase) {
         aiKnowledgeService.save(knowledgeBase);
         return success();
@@ -70,6 +73,7 @@ public class AiKnowledgeController extends BaseController {
 
     @Operation(summary = "更新知识")
     @PutMapping("/{id}")
+    @SaCheckPermission("ai:knowledge:update")
     public R<Void> update(@PathVariable Long id, @RequestBody KnowledgeBase knowledgeBase) {
         knowledgeBase.setId(id);
         aiKnowledgeService.save(knowledgeBase);
@@ -78,6 +82,7 @@ public class AiKnowledgeController extends BaseController {
 
     @Operation(summary = "删除知识")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("ai:knowledge:delete")
     public R<Void> delete(@PathVariable Long id) {
         aiKnowledgeService.delete(id);
         return success();

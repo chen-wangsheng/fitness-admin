@@ -1,5 +1,6 @@
 package com.fitness.admin.system.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -18,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin-user")
 @RequiredArgsConstructor
+@SaCheckPermission("admin:user:read")
 public class AdminUserController extends BaseController {
 
     private final AdminUserService adminUserService;
@@ -35,6 +37,7 @@ public class AdminUserController extends BaseController {
     @LogOperation(action = "新增", module = "管理员管理")
     @Operation(summary = "新增管理员")
     @PostMapping
+    @SaCheckPermission("admin:user:create")
     public R<Void> create(@RequestBody AdminUser adminUser) {
         adminUserService.create(adminUser);
         return success();
@@ -43,6 +46,7 @@ public class AdminUserController extends BaseController {
     @LogOperation(action = "编辑", module = "管理员管理")
     @Operation(summary = "更新管理员")
     @PutMapping("/{id}")
+    @SaCheckPermission("admin:user:update")
     public R<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Long roleId = body.get("roleId") != null ? Long.valueOf(body.get("roleId").toString()) : null;
         Long userId = body.get("userId") != null ? Long.valueOf(body.get("userId").toString()) : null;
@@ -57,6 +61,7 @@ public class AdminUserController extends BaseController {
     @LogOperation(action = "启用/禁用", module = "管理员管理")
     @Operation(summary = "更新管理员状态")
     @PutMapping("/{id}/status")
+    @SaCheckPermission("admin:user:update")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Integer status = Integer.valueOf(body.get("status").toString());
         adminUserService.updateStatus(id, status);
@@ -66,6 +71,7 @@ public class AdminUserController extends BaseController {
     @LogOperation(action = "重置密码", module = "管理员管理")
     @Operation(summary = "重置密码")
     @PostMapping("/{id}/reset-password")
+    @SaCheckPermission("admin:user:update")
     public R<Void> resetPassword(@PathVariable Long id) {
         adminUserService.resetPassword(id);
         return success();

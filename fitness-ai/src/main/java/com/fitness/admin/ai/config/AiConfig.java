@@ -43,6 +43,17 @@ public class AiConfig {
     private Double temperature = 0.7;
 
     /**
+     * AI 调用超时(秒),超过此时间未返回首字节则中断。
+     * 默认为 60s,可被 ai.timeout-seconds 环境变量覆盖。
+     */
+    private Integer timeoutSeconds = 60;
+
+    /**
+     * 单用户每分钟最大调用次数(限流)。0 表示不限制。
+     */
+    private Integer rateLimitPerMinute = 20;
+
+    /**
      * 系统提示词
      */
     private String systemPrompt = "你是一个专业的AI健身助手，名叫FitBot。你擅长：\n" +

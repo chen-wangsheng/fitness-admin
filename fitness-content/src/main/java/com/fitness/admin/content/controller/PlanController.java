@@ -1,5 +1,6 @@
 package com.fitness.admin.content.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/plan")
 @RequiredArgsConstructor
+@SaCheckPermission("plan:read")
 public class PlanController extends BaseController {
 
     private final PlanService planService;
@@ -39,6 +41,7 @@ public class PlanController extends BaseController {
     @LogOperation(action = "新增", module = "训练计划")
     @Operation(summary = "创建计划")
     @PostMapping
+    @SaCheckPermission("plan:create")
     public R<Void> create(@RequestBody PlanCreateDTO createDTO) {
         planService.create(createDTO);
         return success();
@@ -47,6 +50,7 @@ public class PlanController extends BaseController {
     @LogOperation(action = "编辑", module = "训练计划")
     @Operation(summary = "更新计划")
     @PutMapping("/{id}")
+    @SaCheckPermission("plan:update")
     public R<Void> update(@PathVariable Long id, @RequestBody PlanCreateDTO updateDTO) {
         planService.update(id, updateDTO);
         return success();
@@ -55,6 +59,7 @@ public class PlanController extends BaseController {
     @LogOperation(action = "删除", module = "训练计划")
     @Operation(summary = "删除计划")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("plan:delete")
     public R<Void> delete(@PathVariable Long id) {
         planService.delete(id);
         return success();
@@ -63,6 +68,7 @@ public class PlanController extends BaseController {
     @LogOperation(action = "编辑", module = "训练计划")
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
+    @SaCheckPermission("plan:update")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Integer> body) {
         planService.updateStatus(id, body.get("status"));
         return success();

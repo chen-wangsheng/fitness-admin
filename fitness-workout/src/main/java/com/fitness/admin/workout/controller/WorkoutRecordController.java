@@ -1,5 +1,6 @@
 package com.fitness.admin.workout.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -26,6 +27,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/workout-record")
 @RequiredArgsConstructor
+@SaCheckPermission("workout:read")
 public class WorkoutRecordController extends BaseController {
 
     private final WorkoutRecordService workoutRecordService;

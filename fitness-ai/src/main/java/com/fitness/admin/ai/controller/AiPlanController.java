@@ -1,5 +1,6 @@
 package com.fitness.admin.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/ai-plan")
 @RequiredArgsConstructor
+@SaCheckPermission("ai:plan:read")
 public class AiPlanController extends BaseController {
 
     private final AiPlanService aiPlanService;
@@ -34,7 +36,7 @@ public class AiPlanController extends BaseController {
                                       @RequestParam(required = false) String status,
                                       @RequestParam(required = false) String splitType) {
         Page<AiPlan> page = aiPlanService.queryPage(pageNum, pageSize, userId, status, splitType);
-        return page((Page) page);
+        return page(page);
     }
 
     @Operation(summary = "AI计划详情")
@@ -57,6 +59,7 @@ public class AiPlanController extends BaseController {
 
     @Operation(summary = "更新微调规则")
     @PutMapping("/adjustment-rules")
+    @SaCheckPermission("ai:plan:update")
     public R<Void> updateAdjustmentRules(@RequestBody Map<String, Object> config) {
         aiPlanService.updateAdjustmentConfig(config);
         return success();
@@ -64,6 +67,7 @@ public class AiPlanController extends BaseController {
 
     @Operation(summary = "更新状态")
     @PutMapping("/{id}/status")
+    @SaCheckPermission("ai:plan:update")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
         aiPlanService.updateStatus(id, body.get("status"));
         return success();
@@ -71,6 +75,7 @@ public class AiPlanController extends BaseController {
 
     @Operation(summary = "转换为系统计划")
     @PostMapping("/{id}/convert-to-system")
+    @SaCheckPermission("ai:plan:update")
     public R<Long> convertToSystem(@PathVariable Long id) {
         Long planId = aiPlanService.convertToSystem(id);
         return R.ok(planId);

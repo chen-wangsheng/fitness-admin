@@ -1,5 +1,6 @@
 package com.fitness.admin.community.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
@@ -22,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/miniapp/post")
 @RequiredArgsConstructor
+@SaCheckLogin
 public class MiniAppCommunityController extends BaseController {
 
     private final MiniAppCommunityService miniAppCommunityService;

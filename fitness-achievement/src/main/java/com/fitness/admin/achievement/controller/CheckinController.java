@@ -1,5 +1,6 @@
 package com.fitness.admin.achievement.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -21,6 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/checkin")
 @RequiredArgsConstructor
+@SaCheckPermission("achievement:read")
 public class CheckinController extends BaseController {
 
     private final CheckinService checkinService;

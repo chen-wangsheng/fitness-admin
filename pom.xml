@@ -44,6 +44,7 @@
         <cos-api.version>5.6.213</cos-api.version>
         <wxjava.version>4.7.5.B</wxjava.version>
         <lombok.version>1.18.30</lombok.version>
+        <flyway.version>9.22.3</flyway.version>
     </properties>
 
     <dependencyManagement>
@@ -129,6 +130,12 @@
                 <groupId>com.github.binarywang</groupId>
                 <artifactId>wx-java-miniapp-spring-boot-starter</artifactId>
                 <version>${wxjava.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
             </dependency>
 
             <dependency>

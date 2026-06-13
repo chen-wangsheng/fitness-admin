@@ -1,5 +1,6 @@
 package com.fitness.admin.community.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.common.result.PageResult;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/sensitive-word")
 @RequiredArgsConstructor
+@SaCheckPermission("sensitive:read")
 public class SensitiveWordController extends BaseController {
 
     private final SensitiveWordService sensitiveWordService;
@@ -28,6 +30,7 @@ public class SensitiveWordController extends BaseController {
 
     @Operation(summary = "保存敏感词")
     @PostMapping
+    @SaCheckPermission("sensitive:create")
     public R<Void> save(@RequestBody SensitiveWord word) {
         sensitiveWordService.save(word);
         return success();
@@ -35,6 +38,7 @@ public class SensitiveWordController extends BaseController {
 
     @Operation(summary = "删除敏感词")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("sensitive:delete")
     public R<Void> delete(@PathVariable Long id) {
         sensitiveWordService.delete(id);
         return success();

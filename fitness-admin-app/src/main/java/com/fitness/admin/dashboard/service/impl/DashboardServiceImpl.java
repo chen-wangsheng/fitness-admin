@@ -50,6 +50,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final AiSafetyEventMapper aiSafetyEventMapper;
 
     @Override
+    @org.springframework.cache.annotation.Cacheable(value = "dashboard:overview", key = "'days:' + #days")
     public DashboardOverviewVO getOverview(Integer days) {
         if (days == null || days <= 0) {
             days = 7;

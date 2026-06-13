@@ -1,5 +1,6 @@
 package com.fitness.admin.ai.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fitness.admin.ai.dto.*;
 import com.fitness.admin.ai.entity.AiChatMessage;
 import com.fitness.admin.ai.entity.AiChatSession;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/miniapp/ai")
 @RequiredArgsConstructor
+@SaCheckLogin
 public class MiniAppAiController extends BaseController {
 
     private final MiniAppAiService miniAppAiService;

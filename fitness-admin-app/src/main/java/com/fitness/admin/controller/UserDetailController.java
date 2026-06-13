@@ -1,5 +1,6 @@
 package com.fitness.admin.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.ai.entity.AiChatSession;
@@ -24,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
+@SaCheckPermission("user:read")
 public class UserDetailController extends BaseController {
 
     private final WorkoutLogMapper workoutLogMapper;
@@ -39,7 +41,7 @@ public class UserDetailController extends BaseController {
         Page<WorkoutLog> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<WorkoutLog> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(WorkoutLog::getUserId, id).orderByDesc(WorkoutLog::getWorkoutDate);
-        return page((Page) workoutLogMapper.selectPage(page, wrapper));
+        return page(workoutLogMapper.selectPage(page, wrapper));
     }
 
     @Operation(summary = "用户成就列表")
@@ -64,6 +66,6 @@ public class UserDetailController extends BaseController {
         Page<AiChatSession> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<AiChatSession> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(AiChatSession::getUserId, id).orderByDesc(AiChatSession::getCreatedAt);
-        return page((Page) aiChatSessionMapper.selectPage(page, wrapper));
+        return page(aiChatSessionMapper.selectPage(page, wrapper));
     }
 }

@@ -1,5 +1,6 @@
 package com.fitness.admin.achievement.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fitness.admin.achievement.dto.*;
 import com.fitness.admin.achievement.service.MiniAppCheckinService;
 import com.fitness.admin.common.base.BaseController;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/miniapp/checkin")
 @RequiredArgsConstructor
+@SaCheckLogin
 public class MiniAppCheckinController extends BaseController {
 
     private final MiniAppCheckinService miniAppCheckinService;

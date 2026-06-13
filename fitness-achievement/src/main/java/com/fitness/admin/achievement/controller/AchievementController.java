@@ -1,5 +1,6 @@
 package com.fitness.admin.achievement.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/achievement")
 @RequiredArgsConstructor
+@SaCheckPermission("achievement:read")
 public class AchievementController extends BaseController {
 
     private final AchievementService achievementService;
@@ -37,6 +39,7 @@ public class AchievementController extends BaseController {
     @LogOperation(action = "新增", module = "成就管理")
     @Operation(summary = "保存成就")
     @PostMapping
+    @SaCheckPermission("achievement:create")
     public R<Void> save(@RequestBody Achievement achievement) {
         achievementService.save(achievement);
         return success();
@@ -45,6 +48,7 @@ public class AchievementController extends BaseController {
     @LogOperation(action = "编辑", module = "成就管理")
     @Operation(summary = "更新成就")
     @PutMapping("/{id}")
+    @SaCheckPermission("achievement:update")
     public R<Void> update(@PathVariable Long id, @RequestBody Achievement achievement) {
         achievement.setId(id);
         achievementService.save(achievement);
@@ -54,6 +58,7 @@ public class AchievementController extends BaseController {
     @LogOperation(action = "删除", module = "成就管理")
     @Operation(summary = "删除成就")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("achievement:delete")
     public R<Void> delete(@PathVariable Long id) {
         achievementService.delete(id);
         return success();

@@ -1,5 +1,6 @@
 package com.fitness.admin.user.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
+@SaCheckPermission("user:read")
 public class UserController extends BaseController {
 
     private final UserService userService;
@@ -43,6 +45,7 @@ public class UserController extends BaseController {
 
     @Operation(summary = "更新用户")
     @PutMapping
+    @SaCheckPermission("user:update")
     public R<Void> update(@RequestBody UserUpdateDTO updateDTO) {
         userService.updateUser(updateDTO);
         return success();
@@ -50,6 +53,7 @@ public class UserController extends BaseController {
 
     @Operation(summary = "更新用户状态")
     @PutMapping("/{id}/status")
+    @SaCheckPermission("user:update")
     public R<Void> updateStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         userService.updateStatus(id, parseStatus(body.get("status")));
         return success();
@@ -57,6 +61,7 @@ public class UserController extends BaseController {
 
     @Operation(summary = "批量更新用户状态")
     @PutMapping("/batch-status")
+    @SaCheckPermission("user:update")
     public R<Void> batchStatus(@RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         List<Long> userIds = ((List<?>) body.get("user_ids")).stream()
@@ -80,6 +85,7 @@ public class UserController extends BaseController {
 
     @Operation(summary = "保存标签")
     @PostMapping("/tag")
+    @SaCheckPermission("user:update")
     public R<Void> saveTag(@RequestBody UserTag tag) {
         userTagService.save(tag);
         return success();
@@ -87,6 +93,7 @@ public class UserController extends BaseController {
 
     @Operation(summary = "删除标签")
     @DeleteMapping("/tag/{id}")
+    @SaCheckPermission("user:delete")
     public R<Void> deleteTag(@PathVariable Long id) {
         userTagService.delete(id);
         return success();

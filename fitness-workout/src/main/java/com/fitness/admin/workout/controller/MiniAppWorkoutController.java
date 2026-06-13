@@ -1,5 +1,6 @@
 package com.fitness.admin.workout.controller;
 
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
@@ -20,6 +21,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/miniapp/workout")
 @RequiredArgsConstructor
+@SaCheckLogin
 public class MiniAppWorkoutController extends BaseController {
 
     private final MiniAppWorkoutService miniAppWorkoutService;

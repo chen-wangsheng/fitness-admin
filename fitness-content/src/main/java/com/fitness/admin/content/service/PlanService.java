@@ -9,6 +9,7 @@ import com.fitness.admin.content.entity.PlanDayExercise;
 import com.fitness.admin.content.entity.WorkoutPlan;
 import com.fitness.admin.content.mapper.PlanDayExerciseMapper;
 import com.fitness.admin.content.mapper.PlanDayMapper;
+import com.fitness.admin.content.mapper.PlanEntityMapper;
 import com.fitness.admin.content.mapper.PlanMapper;
 import com.fitness.admin.content.vo.PlanDayVO;
 import com.fitness.admin.content.vo.PlanExerciseVO;
@@ -29,6 +30,7 @@ public class PlanService {
     private final PlanMapper planMapper;
     private final PlanDayMapper planDayMapper;
     private final PlanDayExerciseMapper planDayExerciseMapper;
+    private final PlanEntityMapper planEntityMapper;
 
     public Page<WorkoutPlan> queryPage(PlanQueryDTO queryDTO) {
         Page<WorkoutPlan> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
@@ -76,16 +78,15 @@ public class PlanService {
 
     @Transactional(rollbackFor = Exception.class)
     public void create(PlanCreateDTO createDTO) {
-        WorkoutPlan plan = new WorkoutPlan();
-        BeanUtils.copyProperties(createDTO, plan);
+        // 通过 MapStruct 把 DTO 安全地映射到 Entity,显式忽略 id/审计字段,避免外部覆盖
+        WorkoutPlan plan = planEntityMapper.toEntity(createDTO);
         planMapper.insert(plan);
 
         if (createDTO.getDays() != null) {
             for (int dayIndex = 0; dayIndex < createDTO.getDays().size(); dayIndex++) {
                 PlanCreateDTO.PlanDayDTO dayDTO = createDTO.getDays().get(dayIndex);
-                PlanDay day = new PlanDay();
+                PlanDay day = planEntityMapper.toEntity(dayDTO);
                 day.setPlanId(plan.getId());
-                day.setWeekNumber(dayDTO.getWeekNumber());
                 day.setDayOfWeek(dayDTO.getDayNumber() != null ? dayDTO.getDayNumber() : (dayIndex % 7) + 1);
                 day.setDayLabel(dayDTO.getFocus());
                 day.setIsRestDay(dayDTO.getExercises() == null || dayDTO.getExercises().isEmpty() ? 1 : 0);
@@ -94,14 +95,11 @@ public class PlanService {
                 if (dayDTO.getExercises() != null) {
                     for (int i = 0; i < dayDTO.getExercises().size(); i++) {
                         PlanCreateDTO.PlanExerciseDTO exDTO = dayDTO.getExercises().get(i);
-                        PlanDayExercise exercise = new PlanDayExercise();
+                        PlanDayExercise exercise = planEntityMapper.toEntity(exDTO);
                         exercise.setPlanDayId(day.getId());
-                        exercise.setExerciseId(exDTO.getExerciseId());
-                        exercise.setSets(exDTO.getSets());
-                        exercise.setReps(exDTO.getReps());
-                        exercise.setDuration(exDTO.getDuration());
-                        exercise.setRestSeconds(exDTO.getRestSeconds());
-                        exercise.setSort(exDTO.getSort() != null ? exDTO.getSort() : i);
+                        if (exercise.getSort() == null) {
+                            exercise.setSort(i);
+                        }
                         planDayExerciseMapper.insert(exercise);
                     }
                 }
@@ -111,8 +109,8 @@ public class PlanService {
 
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, PlanCreateDTO updateDTO) {
-        WorkoutPlan plan = new WorkoutPlan();
-        BeanUtils.copyProperties(updateDTO, plan);
+        // DTO -> Entity 走 mapper,id 由路径参数注入,审计字段不更新
+        WorkoutPlan plan = planEntityMapper.toEntity(updateDTO);
         plan.setId(id);
         planMapper.updateById(plan);
     }

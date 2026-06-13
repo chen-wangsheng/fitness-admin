@@ -1,0 +1,286 @@
+package com.fitness.admin.ai.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fitness.admin.ai.dto.*;
+import com.fitness.admin.ai.entity.AiChatMessage;
+import com.fitness.admin.ai.entity.AiChatSession;
+import com.fitness.admin.ai.entity.AiUsageDaily;
+import com.fitness.admin.ai.mapper.AiChatMessageMapper;
+import com.fitness.admin.ai.mapper.AiChatSessionMapper;
+import com.fitness.admin.ai.mapper.AiUsageDailyMapper;
+import com.fitness.admin.common.enums.ResultCodeEnum;
+import com.fitness.admin.common.exception.BizException;
+import com.fitness.admin.common.result.PageResult;
+import com.fitness.admin.common.utils.SecurityUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 小程序 AI 对话服务。
+ *
+ * <p>职责:会话/消息的持久化、AI 调用、上下文拼接、反馈、使用统计 upsert。
+ * 计划生成相关逻辑已拆分到 {@link MiniAppPlanGenerateService}。
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class MiniAppChatService {
+
+    private final AiChatSessionMapper sessionMapper;
+    private final AiChatMessageMapper messageMapper;
+    private final AiUsageDailyMapper aiUsageDailyMapper;
+    private final AiService aiService;
+    private final AiRateLimiter rateLimiter;
+    private final AiTimeoutGuard timeoutGuard;
+
+    public ChatResponse sendChatMessage(ChatRequest request) {
+        Long userId = getCurrentUserId();
+        rateLimiter.checkAndAcquire();
+
+        AiChatSession session;
+        if (request.getSessionId() != null) {
+            session = sessionMapper.selectById(request.getSessionId());
+            if (session == null || !session.getUserId().equals(userId)) {
+                throw new BizException("会话不存在");
+            }
+        } else {
+            session = createNewSession(userId);
+        }
+
+        AiChatMessage userMessage = new AiChatMessage();
+        userMessage.setSessionId(session.getId());
+        userMessage.setRole("user");
+        userMessage.setContent(request.getMessage());
+        userMessage.setCreatedAt(LocalDateTime.now());
+        messageMapper.insert(userMessage);
+
+        session.setMessageCount(session.getMessageCount() + 1);
+        if (session.getTitle() == null) {
+            session.setTitle(request.getMessage().substring(0, Math.min(request.getMessage().length(), 50)));
+        }
+        session.setUpdatedAt(LocalDateTime.now());
+        sessionMapper.updateById(session);
+
+        List<AiService.ChatMessage> chatMessages = buildChatMessages(session.getId());
+
+        String aiResponse;
+        try {
+            aiResponse = timeoutGuard.call(() -> aiService.chat(chatMessages));
+        } catch (Exception e) {
+            log.error("AI服务调用失败,使用备用响应", e);
+            aiResponse = "抱歉,AI服务暂时不可用,请稍后再试。错误信息:" + e.getMessage();
+        }
+
+        AiChatMessage aiMessage = new AiChatMessage();
+        aiMessage.setSessionId(session.getId());
+        aiMessage.setRole("assistant");
+        aiMessage.setContent(aiResponse);
+        aiMessage.setTokenCount(aiResponse.length());
+        aiMessage.setCreatedAt(LocalDateTime.now());
+        messageMapper.insert(aiMessage);
+
+        session.setMessageCount(session.getMessageCount() + 1);
+        session.setUpdatedAt(LocalDateTime.now());
+        sessionMapper.updateById(session);
+
+        upsertTodayUsage();
+
+        ChatResponse response = new ChatResponse();
+        response.setSessionId(session.getId());
+        response.setMessageId(aiMessage.getId());
+        response.setContent(aiResponse);
+        response.setTokenCount(aiMessage.getTokenCount());
+        return response;
+    }
+
+    public PageResult<AiChatMessage> getChatMessages(Long sessionId, Integer pageNum, Integer pageSize) {
+        Long userId = getCurrentUserId();
+
+        AiChatSession session = sessionMapper.selectById(sessionId);
+        if (session == null || !session.getUserId().equals(userId)) {
+            throw new BizException("会话不存在");
+        }
+
+        Page<AiChatMessage> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<AiChatMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiChatMessage::getSessionId, sessionId)
+               .orderByAsc(AiChatMessage::getCreatedAt);
+        Page<AiChatMessage> result = messageMapper.selectPage(page, wrapper);
+
+        return PageResult.of(result);
+    }
+
+    public PageResult<AiChatSession> getChatSessions(Integer pageNum, Integer pageSize) {
+        Long userId = getCurrentUserId();
+
+        Page<AiChatSession> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<AiChatSession> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiChatSession::getUserId, userId)
+               .orderByDesc(AiChatSession::getUpdatedAt);
+        Page<AiChatSession> result = sessionMapper.selectPage(page, wrapper);
+
+        return PageResult.of(result);
+    }
+
+    public void feedback(Long sessionId, Long msgId, Integer feedback) {
+        Long userId = getCurrentUserId();
+
+        AiChatSession session = sessionMapper.selectById(sessionId);
+        if (session == null || !session.getUserId().equals(userId)) {
+            throw new BizException("会话不存在");
+        }
+
+        AiChatMessage message = messageMapper.selectById(msgId);
+        if (message == null || !message.getSessionId().equals(sessionId)) {
+            throw new BizException("消息不存在");
+        }
+
+        message.setFeedback(feedback);
+        messageMapper.updateById(message);
+    }
+
+    private List<AiService.ChatMessage> buildChatMessages(Long sessionId) {
+        List<AiService.ChatMessage> messages = new ArrayList<>();
+        messages.add(new AiService.ChatMessage("system",
+                "你是一个专业的AI健身助手,名叫FitBot。你擅长制定训练计划、解答健身问题、提供营养建议。请用友好专业的语气回答。"));
+
+        LambdaQueryWrapper<AiChatMessage> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AiChatMessage::getSessionId, sessionId)
+               .orderByDesc(AiChatMessage::getCreatedAt)
+               .last("LIMIT 20");
+        List<AiChatMessage> history = messageMapper.selectList(wrapper);
+
+        for (int i = history.size() - 1; i >= 0; i--) {
+            AiChatMessage msg = history.get(i);
+            messages.add(new AiService.ChatMessage(msg.getRole(), msg.getContent()));
+        }
+        return messages;
+    }
+
+    private AiChatSession createNewSession(Long userId) {
+        AiChatSession session = new AiChatSession();
+        session.setUserId(userId);
+        session.setSessionType("fitness");
+        session.setMessageCount(0);
+        session.setStatus(1);
+        session.setCreatedAt(LocalDateTime.now());
+        session.setUpdatedAt(LocalDateTime.now());
+        sessionMapper.insert(session);
+        return session;
+    }
+
+    private Long getCurrentUserId() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        if (userId == null) {
+            throw new BizException(ResultCodeEnum.UNAUTHORIZED);
+        }
+        return userId;
+    }
+
+    /**
+     * 实时更新今日 AI 使用统计 (upsert ai_usage_daily)。
+     */
+    private void upsertTodayUsage() {
+        try {
+            LocalDate today = LocalDate.now();
+            LocalDateTime dayStart = today.atStartOfDay();
+            LocalDateTime dayEnd = today.atTime(23, 59, 59);
+
+            Long chatSessions = sessionMapper.selectCount(
+                    Wrappers.<AiChatSession>lambdaQuery()
+                            .between(AiChatSession::getCreatedAt, dayStart, dayEnd)
+            );
+
+            List<AiChatMessage> dayMessages = messageMapper.selectList(
+                    Wrappers.<AiChatMessage>lambdaQuery()
+                            .between(AiChatMessage::getCreatedAt, dayStart, dayEnd)
+            );
+            int totalMessages = dayMessages.size();
+
+            int positiveFeedback = 0;
+            int negativeFeedback = 0;
+            for (AiChatMessage msg : dayMessages) {
+                if (msg.getFeedback() != null) {
+                    if (msg.getFeedback() > 0) positiveFeedback++;
+                    else if (msg.getFeedback() < 0) negativeFeedback++;
+                }
+            }
+
+            int feedbackTotal = positiveFeedback + negativeFeedback;
+            BigDecimal satisfactionRate = feedbackTotal > 0
+                    ? BigDecimal.valueOf(positiveFeedback)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(feedbackTotal), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            long totalTokens = dayMessages.stream()
+                    .filter(m -> "assistant".equals(m.getRole()) && m.getTokenCount() != null)
+                    .mapToLong(AiChatMessage::getTokenCount)
+                    .sum();
+
+            long assistantMessages = dayMessages.stream()
+                    .filter(m -> "assistant".equals(m.getRole()))
+                    .count();
+            long ragHitMessages = dayMessages.stream()
+                    .filter(m -> "assistant".equals(m.getRole())
+                            && m.getRagRefs() != null && !m.getRagRefs().isBlank())
+                    .count();
+            BigDecimal ragHitRate = assistantMessages > 0
+                    ? BigDecimal.valueOf(ragHitMessages)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(BigDecimal.valueOf(assistantMessages), 2, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+
+            int avgResponseTimeMs = 0;
+            if (assistantMessages > 0) {
+                long avgTokens = dayMessages.stream()
+                        .filter(m -> "assistant".equals(m.getRole()) && m.getTokenCount() != null)
+                        .mapToLong(AiChatMessage::getTokenCount)
+                        .sum() / Math.max(assistantMessages, 1);
+                avgResponseTimeMs = (int) (avgTokens * 10);
+            }
+
+            AiUsageDaily existing = aiUsageDailyMapper.selectOne(
+                    Wrappers.<AiUsageDaily>lambdaQuery()
+                            .eq(AiUsageDaily::getStatDate, today)
+            );
+
+            if (existing != null) {
+                existing.setTotalChatSessions(chatSessions.intValue());
+                existing.setTotalChatMessages(totalMessages);
+                existing.setTotalTokensUsed(totalTokens);
+                existing.setPositiveFeedbackCount(positiveFeedback);
+                existing.setNegativeFeedbackCount(negativeFeedback);
+                existing.setSatisfactionRate(satisfactionRate);
+                existing.setAvgResponseTimeMs(avgResponseTimeMs);
+                existing.setRagHitRate(ragHitRate);
+                aiUsageDailyMapper.updateById(existing);
+            } else {
+                AiUsageDaily record = new AiUsageDaily();
+                record.setStatDate(today);
+                record.setTotalChatSessions(chatSessions.intValue());
+                record.setTotalChatMessages(totalMessages);
+                record.setTotalTokensUsed(totalTokens);
+                record.setPositiveFeedbackCount(positiveFeedback);
+                record.setNegativeFeedbackCount(negativeFeedback);
+                record.setSatisfactionRate(satisfactionRate);
+                record.setAvgResponseTimeMs(avgResponseTimeMs);
+                record.setRagHitRate(ragHitRate);
+                record.setCreatedAt(LocalDateTime.now());
+                aiUsageDailyMapper.insert(record);
+            }
+        } catch (Exception e) {
+            log.warn("实时更新AI使用统计失败,将由定时任务补偿: {}", e.getMessage());
+        }
+    }
+}

@@ -1,6 +1,6 @@
 package com.fitness.admin.system.controller;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/operation-log")
 @RequiredArgsConstructor
+@SaCheckPermission("log:operation:read")
 public class OperationLogController extends BaseController {
 
     private final OperationLogService operationLogService;

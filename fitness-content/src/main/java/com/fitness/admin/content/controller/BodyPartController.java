@@ -1,5 +1,6 @@
 package com.fitness.admin.content.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.content.entity.BodyPart;
@@ -16,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/body-part")
 @RequiredArgsConstructor
+@SaCheckPermission("body-part:read")
 public class BodyPartController extends BaseController {
 
     private final BodyPartService bodyPartService;
@@ -29,6 +31,7 @@ public class BodyPartController extends BaseController {
     @LogOperation(action = "新增", module = "部位管理")
     @Operation(summary = "保存部位")
     @PostMapping
+    @SaCheckPermission("body-part:create")
     public R<Void> save(@RequestBody BodyPart bodyPart) {
         bodyPartService.save(bodyPart);
         return success();
@@ -37,6 +40,7 @@ public class BodyPartController extends BaseController {
     @LogOperation(action = "编辑", module = "部位管理")
     @Operation(summary = "更新部位")
     @PutMapping("/{id}")
+    @SaCheckPermission("body-part:update")
     public R<Void> update(@PathVariable Long id, @RequestBody BodyPart bodyPart) {
         bodyPart.setId(id);
         bodyPartService.save(bodyPart);
@@ -46,6 +50,7 @@ public class BodyPartController extends BaseController {
     @LogOperation(action = "删除", module = "部位管理")
     @Operation(summary = "删除部位")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("body-part:delete")
     public R<Void> delete(@PathVariable Long id) {
         bodyPartService.delete(id);
         return success();

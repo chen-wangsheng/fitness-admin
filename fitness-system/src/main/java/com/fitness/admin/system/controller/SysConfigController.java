@@ -1,5 +1,6 @@
 package com.fitness.admin.system.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.system.entity.SysConfig;
@@ -18,6 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/sys-config")
 @RequiredArgsConstructor
+@SaCheckPermission("sys:config:read")
 public class SysConfigController extends BaseController {
 
     private final SysConfigService sysConfigService;
@@ -33,6 +35,7 @@ public class SysConfigController extends BaseController {
     @LogOperation(action = "新增", module = "系统配置")
     @Operation(summary = "保存配置")
     @PostMapping
+    @SaCheckPermission("sys:config:create")
     public R<Void> save(@RequestBody SysConfig config) {
         sysConfigService.save(config);
         return success();
@@ -41,6 +44,7 @@ public class SysConfigController extends BaseController {
     @LogOperation(action = "编辑", module = "系统配置")
     @Operation(summary = "按key更新配置")
     @PutMapping("/{configKey}")
+    @SaCheckPermission("sys:config:update")
     public R<Void> updateByKey(@PathVariable String configKey, @RequestBody Map<String, String> body) {
         String configValue = body.get("configValue");
         String description = body.get("description");
@@ -51,6 +55,7 @@ public class SysConfigController extends BaseController {
     @LogOperation(action = "删除", module = "系统配置")
     @Operation(summary = "删除配置")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("sys:config:delete")
     public R<Void> delete(@PathVariable Long id) {
         sysConfigService.delete(id);
         return success();
@@ -75,6 +80,7 @@ public class SysConfigController extends BaseController {
     @LogOperation(action = "编辑", module = "系统配置")
     @Operation(summary = "更新AI配置")
     @PutMapping("/ai-config")
+    @SaCheckPermission("sys:config:update")
     public R<Void> updateAiConfig(@RequestBody Map<String, String> configMap) {
         for (Map.Entry<String, String> entry : configMap.entrySet()) {
             String fullKey = AI_CONFIG_PREFIX + entry.getKey();
@@ -85,6 +91,7 @@ public class SysConfigController extends BaseController {
 
     @Operation(summary = "测试AI连接")
     @PostMapping("/ai-config/test-connection")
+    @SaCheckPermission("sys:config:update")
     public R<Void> testAiConnection() {
         // TODO: 实际测试LLM连接
         return success();

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fitness.admin.system.entity.SysConfig;
 import com.fitness.admin.system.mapper.SysConfigMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,8 +14,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SysConfigService {
 
+    public static final String CACHE_NAME = "dict";
+    public static final String CACHE_KEY = "'sysConfig:all'";
+
     private final SysConfigMapper sysConfigMapper;
 
+    @Cacheable(value = CACHE_NAME, key = CACHE_KEY)
     public List<SysConfig> list() {
         return sysConfigMapper.selectList(null);
     }
@@ -24,6 +30,7 @@ public class SysConfigService {
         return sysConfigMapper.selectList(wrapper);
     }
 
+    @CacheEvict(value = CACHE_NAME, allEntries = true)
     public void save(SysConfig config) {
         if (config.getId() == null) {
             sysConfigMapper.insert(config);
@@ -32,6 +39,7 @@ public class SysConfigService {
         }
     }
 
+    @CacheEvict(value = CACHE_NAME, allEntries = true)
     public void saveByKey(String configKey, String configValue, String description) {
         QueryWrapper<SysConfig> wrapper = new QueryWrapper<>();
         wrapper.eq("config_key", configKey);
@@ -51,6 +59,7 @@ public class SysConfigService {
         }
     }
 
+    @CacheEvict(value = CACHE_NAME, allEntries = true)
     public void delete(Long id) {
         sysConfigMapper.deleteById(id);
     }
