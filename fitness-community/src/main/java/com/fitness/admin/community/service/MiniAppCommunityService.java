@@ -84,6 +84,7 @@ public class MiniAppCommunityService {
         response.setAvatarUrl(user != null ? user.getAvatarUrl() : null);
         response.setContent(post.getContent());
         response.setImages(parseImages(post.getImages()));
+        response.setWorkoutLogId(post.getWorkoutLogId());
         response.setLikeCount(post.getLikeCount());
         response.setCommentCount(post.getCommentCount());
         response.setCreatedAt(post.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
@@ -109,6 +110,7 @@ public class MiniAppCommunityService {
         post.setUserId(userId);
         post.setContent(request.getContent());
         post.setImages(request.getImages() != null ? String.join(",", request.getImages()) : null);
+        post.setWorkoutLogId(request.getWorkoutLogId());
         post.setLikeCount(0);
         post.setCommentCount(0);
         post.setStatus(1);
@@ -176,6 +178,25 @@ public class MiniAppCommunityService {
                .orderByAsc(CommunityComment::getCreatedAt);
         Page<CommunityComment> result = commentMapper.selectPage(page, wrapper);
 
+        // 收集所有 parentId,批量查询父评论以获取 replyNickname
+        Map<Long, String> parentNicknameMap = new HashMap<>();
+        List<Long> parentIds = new ArrayList<>();
+        for (CommunityComment comment : result.getRecords()) {
+            if (comment.getParentId() != null) {
+                parentIds.add(comment.getParentId());
+            }
+        }
+        if (!parentIds.isEmpty()) {
+            List<CommunityComment> parents = commentMapper.selectBatchIds(parentIds);
+            for (CommunityComment parent : parents) {
+                if (parent.getUserId() != null) {
+                    User parentUser = userMapper.selectById(parent.getUserId());
+                    parentNicknameMap.put(parent.getId(),
+                            parentUser != null ? parentUser.getNickname() : "未知用户");
+                }
+            }
+        }
+
         List<Map<String, Object>> list = new ArrayList<>();
         for (CommunityComment comment : result.getRecords()) {
             Map<String, Object> map = new HashMap<>();
@@ -190,6 +211,11 @@ public class MiniAppCommunityService {
             User user = userMapper.selectById(comment.getUserId());
             map.put("nickname", user != null ? user.getNickname() : "未知用户");
             map.put("avatarUrl", user != null ? user.getAvatarUrl() : null);
+
+            // 回复的目标昵称
+            if (comment.getParentId() != null) {
+                map.put("replyNickname", parentNicknameMap.getOrDefault(comment.getParentId(), ""));
+            }
 
             list.add(map);
         }
@@ -239,6 +265,29 @@ public class MiniAppCommunityService {
      * 转换为帖子页面结果
      */
     private PageResult<Map<String, Object>> convertToPostPageResult(Page<CommunityPost> page) {
+        Long currentUserId = null;
+        try {
+            currentUserId = getCurrentUserId();
+        } catch (Exception ignored) {
+            // 未登录时 isLiked 全部为 false
+        }
+
+        // 批量查询当前用户对列表帖子的点赞状态,避免 N+1
+        Set<Long> likedPostIds = new HashSet<>();
+        if (currentUserId != null && !page.getRecords().isEmpty()) {
+            List<Long> postIds = new ArrayList<>();
+            for (CommunityPost p : page.getRecords()) {
+                postIds.add(p.getId());
+            }
+            LambdaQueryWrapper<PostLike> likeWrapper = new LambdaQueryWrapper<>();
+            likeWrapper.eq(PostLike::getUserId, currentUserId)
+                       .in(PostLike::getPostId, postIds);
+            List<PostLike> likes = postLikeMapper.selectList(likeWrapper);
+            for (PostLike like : likes) {
+                likedPostIds.add(like.getPostId());
+            }
+        }
+
         List<Map<String, Object>> list = new ArrayList<>();
         for (CommunityPost post : page.getRecords()) {
             Map<String, Object> map = new HashMap<>();
@@ -246,8 +295,10 @@ public class MiniAppCommunityService {
             map.put("userId", post.getUserId());
             map.put("content", post.getContent());
             map.put("images", parseImages(post.getImages()));
+            map.put("workoutLogId", post.getWorkoutLogId());
             map.put("likeCount", post.getLikeCount());
             map.put("commentCount", post.getCommentCount());
+            map.put("isLiked", likedPostIds.contains(post.getId()));
             map.put("createdAt", post.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
             User user = userMapper.selectById(post.getUserId());

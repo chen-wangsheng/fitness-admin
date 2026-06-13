@@ -13,6 +13,7 @@ public class CommunityPost extends BaseEntity {
     private Long userId;
     private String content;
     private String images;
+    private Long workoutLogId;
     private Integer likeCount;
     private Integer commentCount;
     private Integer status;
