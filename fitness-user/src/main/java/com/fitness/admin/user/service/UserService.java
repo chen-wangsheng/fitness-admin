@@ -21,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,7 +66,30 @@ public class UserService {
             throw new BizException(ResultCodeEnum.DATA_NOT_FOUND);
         }
         UserDetailVO vo = new UserDetailVO();
-        BeanUtils.copyProperties(convertToVO(user), vo);
+        // 直接从 User 实体复制（保留 openid 等字段）
+        BeanUtils.copyProperties(user, vo);
+        vo.setStatusCode(user.getStatus());
+
+        // 加载标签
+        List<UserTag> tags = userMapper.selectTagsByUserId(user.getId());
+        vo.setTags(tags.stream().map(tag -> {
+            UserTagVO tagVO = new UserTagVO();
+            tagVO.setId(tag.getId());
+            tagVO.setName(tag.getName());
+            tagVO.setColor(tag.getColor());
+            return tagVO;
+        }).collect(Collectors.toList()));
+
+        // 计算 BMI = 体重(kg) / 身高(m)²
+        if (user.getCurrentWeightKg() != null && user.getHeightCm() != null
+                && user.getHeightCm().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal heightM = user.getHeightCm()
+                    .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+            BigDecimal bmi = user.getCurrentWeightKg()
+                    .divide(heightM.multiply(heightM), 1, RoundingMode.HALF_UP);
+            vo.setBmi(bmi);
+        }
+
         return vo;
     }
 
