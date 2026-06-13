@@ -9,6 +9,7 @@ import com.fitness.admin.content.entity.Exercise;
 import com.fitness.admin.content.entity.ExerciseBodyPart;
 import com.fitness.admin.content.mapper.BodyPartMapper;
 import com.fitness.admin.content.mapper.ExerciseBodyPartMapper;
+import com.fitness.admin.content.mapper.ExerciseEntityMapper;
 import com.fitness.admin.content.mapper.ExerciseMapper;
 import com.fitness.admin.content.vo.BodyPartVO;
 import com.fitness.admin.content.vo.ExerciseVO;
@@ -31,6 +32,7 @@ public class ExerciseService {
     private final ExerciseMapper exerciseMapper;
     private final BodyPartMapper bodyPartMapper;
     private final ExerciseBodyPartMapper exerciseBodyPartMapper;
+    private final ExerciseEntityMapper exerciseEntityMapper;
 
     public Page<ExerciseVO> queryPage(ExerciseQueryDTO queryDTO) {
         Page<Exercise> page = new Page<>(queryDTO.getPageNum(), queryDTO.getPageSize());
@@ -74,8 +76,7 @@ public class ExerciseService {
 
     @Transactional(rollbackFor = Exception.class)
     public void create(ExerciseCreateDTO createDTO) {
-        Exercise exercise = new Exercise();
-        BeanUtils.copyProperties(createDTO, exercise);
+        Exercise exercise = exerciseEntityMapper.toEntity(createDTO);
         exerciseMapper.insert(exercise);
 
         if (createDTO.getBodyPartIds() != null) {
@@ -90,8 +91,7 @@ public class ExerciseService {
 
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, ExerciseCreateDTO updateDTO) {
-        Exercise exercise = new Exercise();
-        BeanUtils.copyProperties(updateDTO, exercise);
+        Exercise exercise = exerciseEntityMapper.toEntity(updateDTO);
         exercise.setId(id);
         exerciseMapper.updateById(exercise);
 

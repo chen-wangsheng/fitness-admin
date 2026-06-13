@@ -2,14 +2,15 @@ package com.fitness.admin.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fitness.admin.common.annotation.LogOperation;
 import com.fitness.admin.common.base.BaseController;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
+import com.fitness.admin.system.dto.AdminUserUpsertDTO;
 import com.fitness.admin.system.service.AdminUserService;
-import com.fitness.admin.common.annotation.LogOperation;
-import com.fitness.admin.user.entity.AdminUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,8 +39,8 @@ public class AdminUserController extends BaseController {
     @Operation(summary = "新增管理员")
     @PostMapping
     @SaCheckPermission("admin:user:create")
-    public R<Void> create(@RequestBody AdminUser adminUser) {
-        adminUserService.create(adminUser);
+    public R<Void> create(@Valid @RequestBody AdminUserUpsertDTO dto) {
+        adminUserService.create(dto);
         return success();
     }
 
@@ -47,14 +48,8 @@ public class AdminUserController extends BaseController {
     @Operation(summary = "更新管理员")
     @PutMapping("/{id}")
     @SaCheckPermission("admin:user:update")
-    public R<Void> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Long roleId = body.get("roleId") != null ? Long.valueOf(body.get("roleId").toString()) : null;
-        Long userId = body.get("userId") != null ? Long.valueOf(body.get("userId").toString()) : null;
-        String nickname = (String) body.get("nickname");
-        String avatar = (String) body.get("avatar");
-        String email = (String) body.get("email");
-        String phone = (String) body.get("phone");
-        adminUserService.update(id, roleId, userId, nickname, avatar, email, phone);
+    public R<Void> update(@PathVariable Long id, @Valid @RequestBody AdminUserUpsertDTO dto) {
+        adminUserService.update(id, dto);
         return success();
     }
 
