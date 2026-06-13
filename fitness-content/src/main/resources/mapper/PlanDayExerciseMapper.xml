@@ -5,7 +5,7 @@
 
     <select id="selectByPlanDayId" resultType="com.fitness.admin.content.vo.PlanExerciseVO">
         SELECT pde.*, e.name as exerciseName FROM plan_day_exercise pde
-        LEFT JOIN exercise e ON pde.exercise_id = e.id
+        INNER JOIN exercise e ON pde.exercise_id = e.id
         WHERE pde.plan_day_id = #{planDayId} ORDER BY pde.sort
     </select>
 

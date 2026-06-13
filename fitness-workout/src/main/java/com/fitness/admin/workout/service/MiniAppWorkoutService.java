@@ -91,6 +91,11 @@ public class MiniAppWorkoutService {
         if (request.getPlanDayId() != null) {
             List<PlanExerciseVO> planExercises = planDayExerciseMapper.selectByPlanDayId(request.getPlanDayId());
             for (PlanExerciseVO pe : planExercises) {
+                // 跳过 exercise_id 无效的记录（动作已被删除）
+                if (pe.getExerciseId() == null || pe.getExerciseName() == null) {
+                    log.warn("计划动作 exercise_id={} 在 exercise 表中不存在，已跳过", pe.getExerciseId());
+                    continue;
+                }
                 WorkoutLogExercise logExercise = new WorkoutLogExercise();
                 logExercise.setWorkoutLogId(workoutLog.getId());
                 logExercise.setExerciseId(pe.getExerciseId());
