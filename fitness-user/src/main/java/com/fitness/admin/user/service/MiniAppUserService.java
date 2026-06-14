@@ -144,6 +144,10 @@ public class MiniAppUserService {
         if (request.getWorkoutDurationMin() != null) {
             user.setWorkoutDurationMin(request.getWorkoutDurationMin());
         }
+        if (request.getEmail() != null) {
+            String email = request.getEmail().trim();
+            user.setEmail(email.isEmpty() ? null : email);
+        }
 
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.updateById(user);

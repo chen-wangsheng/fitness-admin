@@ -28,9 +28,9 @@ public class AnnouncementPublishJob {
     private final EmailService emailService;
 
     /**
-     * 每分钟执行一次，检查是否有到期的定时公告需要发布
+     * 每小时执行一次，检查是否有到期的定时公告需要发布
      */
-//    @Scheduled(cron = "0 * * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public void publishScheduledAnnouncements() {
         LocalDateTime now = LocalDateTime.now();
 
