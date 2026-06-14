@@ -3,13 +3,34 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/fitness?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
+    # dev 走云开发数据库(腾讯云 Cynosdb),代理会主动掐空闲连接,故加保活参数
+    url: jdbc:mysql://${MYSQL_HOST:sh-cynosdbmysql-grp-9h5hb332.sql.tencentcdb.com}:${MYSQL_PORT:22018}/${MYSQL_DB:vance001-d4gp6ueg0dee2c57e}?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&tcpKeepAlive=true&socketTimeout=120000&connectTimeout=10000
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: fitness-admin-dev-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      # 30s 一次 ping,让连接不被云代理 idle-kill(代理阈值通常 30~60s)
+      keepalive-time: 30000
+      # 29 分钟,小于 MySQL 默认 wait_timeout=28800s 留缓冲
+      max-lifetime: 1740000
+      idle-timeout: 300000
+      connection-timeout: 30000
+      validation-timeout: 5000
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 
 wx:
   miniapp:
