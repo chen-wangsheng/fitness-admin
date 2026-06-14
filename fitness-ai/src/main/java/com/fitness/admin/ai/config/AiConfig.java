@@ -35,7 +35,7 @@ public class AiConfig {
     /**
      * 最大token数
      */
-    private Integer maxTokens = 2000;
+    private Integer maxTokens = 1500;
 
     /**
      * 温度参数

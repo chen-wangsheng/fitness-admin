@@ -1,5 +1,6 @@
 package com.fitness.admin.ai.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,9 +11,11 @@ import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.utils.SecurityUtil;
+import com.fitness.admin.content.entity.Exercise;
 import com.fitness.admin.content.entity.PlanDay;
 import com.fitness.admin.content.entity.PlanDayExercise;
 import com.fitness.admin.content.entity.WorkoutPlan;
+import com.fitness.admin.content.mapper.ExerciseMapper;
 import com.fitness.admin.content.mapper.PlanDayExerciseMapper;
 import com.fitness.admin.content.mapper.PlanDayMapper;
 import com.fitness.admin.content.mapper.PlanMapper;
@@ -43,6 +46,7 @@ public class MiniAppPlanGenerateService {
     private final PlanMapper workoutPlanMapper;
     private final PlanDayMapper planDayMapper;
     private final PlanDayExerciseMapper planDayExerciseMapper;
+    private final ExerciseMapper exerciseMapper;
     private final AiRateLimiter rateLimiter;
     private final AiTimeoutGuard timeoutGuard;
 
@@ -80,7 +84,7 @@ public class MiniAppPlanGenerateService {
         aiPlan.setResponse(aiResponse);
         aiPlan.setGoal(request.getGoal());
         aiPlan.setAvailableEquipment(request.getAvailableEquipment() != null
-                ? String.join(",", request.getAvailableEquipment()) : null);
+                ? writeJsonList(request.getAvailableEquipment()) : null);
         aiPlan.setDaysPerWeek(request.getDaysPerWeek());
         aiPlan.setSplitType((String) planData.getOrDefault("splitType", "full_body"));
         aiPlan.setGenerationParams(request.getBodyMetrics() != null
@@ -135,37 +139,44 @@ public class MiniAppPlanGenerateService {
         Long workoutPlanId = workoutPlan.getId();
 
         List<WeeklyPlanDay> weeklyPlan = parseResponseToWeeklyPlan(aiPlan);
-        int weekNumber = 1;
+        int totalWeeks = extractDurationWeeks(aiPlan);
+        if (totalWeeks < 1) {
+            totalWeeks = 1;
+        }
         int daySortOrder = 0;
-        for (WeeklyPlanDay dayData : weeklyPlan) {
-            PlanDay planDay = new PlanDay();
-            planDay.setPlanId(workoutPlanId);
-            planDay.setWeekNumber(weekNumber);
-            planDay.setDayOfWeek(dayData.getDayOfWeek());
-            planDay.setDayLabel(dayData.getDayLabel());
-            planDay.setIsRestDay(0);
-            planDay.setSortOrder(daySortOrder++);
-            planDayMapper.insert(planDay);
+        for (int week = 1; week <= totalWeeks; week++) {
+            int exerciseSort = 0;
+            for (WeeklyPlanDay dayData : weeklyPlan) {
+                PlanDay planDay = new PlanDay();
+                planDay.setPlanId(workoutPlanId);
+                planDay.setWeekNumber(week);
+                planDay.setDayOfWeek(dayData.getDayOfWeek());
+                planDay.setDayLabel(week == 1
+                        ? dayData.getDayLabel()
+                        : "第" + week + "周 · " + dayData.getDayLabel());
+                planDay.setIsRestDay(0);
+                planDay.setSortOrder(daySortOrder++);
+                planDayMapper.insert(planDay);
 
-            Long planDayId = planDay.getId();
+                Long planDayId = planDay.getId();
 
-            if (dayData.getExercises() != null) {
-                int exerciseSort = 0;
-                for (PlanExercise exData : dayData.getExercises()) {
-                    PlanDayExercise pde = new PlanDayExercise();
-                    pde.setPlanDayId(planDayId);
-                    pde.setExerciseId(exData.getExerciseId());
-                    pde.setSets(exData.getSets() != null ? exData.getSets() : 3);
-                    pde.setReps(exData.getReps() != null ? exData.getReps() : "10");
-                    pde.setRestSeconds(exData.getRestSeconds() != null ? exData.getRestSeconds() : 60);
-                    pde.setSort(exerciseSort++);
-                    planDayExerciseMapper.insert(pde);
+                if (dayData.getExercises() != null) {
+                    for (PlanExercise exData : dayData.getExercises()) {
+                        PlanDayExercise pde = new PlanDayExercise();
+                        pde.setPlanDayId(planDayId);
+                        pde.setExerciseId(resolveExerciseId(exData.getExerciseName()));
+                        pde.setSets(exData.getSets() != null ? exData.getSets() : 3);
+                        pde.setReps(exData.getReps() != null ? exData.getReps() : "10");
+                        pde.setRestSeconds(exData.getRestSeconds() != null ? exData.getRestSeconds() : 60);
+                        pde.setSort(exerciseSort++);
+                        planDayExerciseMapper.insert(pde);
+                    }
                 }
             }
         }
 
         if (weeklyPlan.isEmpty()) {
-            createDefaultPlanDays(workoutPlanId, aiPlan.getDaysPerWeek());
+            createDefaultPlanDays(workoutPlanId, aiPlan.getDaysPerWeek(), totalWeeks);
         }
 
         aiPlan.setStatus("confirmed");
@@ -332,7 +343,7 @@ public class MiniAppPlanGenerateService {
         aiPlan.setPrompt("fallback plan for: " + request.getGoal());
         aiPlan.setGoal(request.getGoal());
         aiPlan.setAvailableEquipment(request.getAvailableEquipment() != null
-                ? String.join(",", request.getAvailableEquipment()) : null);
+                ? writeJsonList(request.getAvailableEquipment()) : null);
         aiPlan.setDaysPerWeek(request.getDaysPerWeek());
 
         String splitType = determineSplitType(request.getDaysPerWeek());
@@ -482,19 +493,21 @@ public class MiniAppPlanGenerateService {
         }
     }
 
-    private void createDefaultPlanDays(Long workoutPlanId, Integer daysPerWeek) {
+    private void createDefaultPlanDays(Long workoutPlanId, Integer daysPerWeek, int totalWeeks) {
         String[] dayLabels = {"周一", "周二", "周三", "周四", "周五", "周六", "周日"};
         int sortOrder = 0;
-        for (int i = 0; i < 7 && sortOrder < daysPerWeek; i++) {
-            if (shouldTrainOnDay(i, daysPerWeek)) {
-                PlanDay planDay = new PlanDay();
-                planDay.setPlanId(workoutPlanId);
-                planDay.setWeekNumber(1);
-                planDay.setDayOfWeek(i + 1);
-                planDay.setDayLabel(dayLabels[i]);
-                planDay.setIsRestDay(0);
-                planDay.setSortOrder(sortOrder++);
-                planDayMapper.insert(planDay);
+        for (int week = 1; week <= totalWeeks; week++) {
+            for (int i = 0; i < 7 && sortOrder < daysPerWeek; i++) {
+                if (shouldTrainOnDay(i, daysPerWeek)) {
+                    PlanDay planDay = new PlanDay();
+                    planDay.setPlanId(workoutPlanId);
+                    planDay.setWeekNumber(week);
+                    planDay.setDayOfWeek(i + 1);
+                    planDay.setDayLabel(dayLabels[i]);
+                    planDay.setIsRestDay(0);
+                    planDay.setSortOrder(sortOrder++);
+                    planDayMapper.insert(planDay);
+                }
             }
         }
     }
@@ -505,6 +518,49 @@ public class MiniAppPlanGenerateService {
             throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
+    }
+
+    /**
+     * 将 List<String> 序列化为 MySQL JSON 列可接受的字符串(eg. ["a","b"])。
+     * 字段在表里是 JSON 类型,不能用 String.join(",") 拼 CSV,否则触发 Invalid JSON text。
+     */
+    private String writeJsonList(List<String> list) {
+        if (list == null || list.isEmpty()) {
+            return "[]";
+        }
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (Exception e) {
+            log.warn("序列化器械列表为 JSON 失败,降级为空数组: {}", e.getMessage());
+            return "[]";
+        }
+    }
+
+    /**
+     * 根据动作中文名解析 exercise_id。
+     * <p>AI 返回的计划只给 exerciseName(字符串),不会给 exerciseId,但 plan_day_exercise.exercise_id
+     * 是 NOT NULL,必须先在 exercise 表里查到 id 才能落库。查不到则按 AI 返回名称新建一条最小可用记录,
+     * 避免单条动作卡死整个确认流程。
+     */
+    private Long resolveExerciseId(String exerciseName) {
+        if (exerciseName == null || exerciseName.trim().isEmpty()) {
+            throw new BizException("AI计划中包含空动作名,无法落库");
+        }
+        String name = exerciseName.trim();
+        LambdaQueryWrapper<Exercise> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Exercise::getName, name).last("LIMIT 1");
+        Exercise exist = exerciseMapper.selectOne(wrapper);
+        if (exist != null) {
+            return exist.getId();
+        }
+        Exercise fresh = new Exercise();
+        fresh.setName(name);
+        fresh.setExerciseType("strength");
+        fresh.setStatus(1);
+        fresh.setIsCompound(0);
+        exerciseMapper.insert(fresh);
+        log.info("AI计划动作名 [{}] 在 exercise 表不存在,已自动新建 id={}", name, fresh.getId());
+        return fresh.getId();
     }
 
     private static final String PLAN_SYSTEM_PROMPT = """

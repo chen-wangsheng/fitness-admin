@@ -57,7 +57,7 @@ mybatis-plus:
 
 sa-token:
   token-name: Authorization
-  timeout: 7200
+  timeout: 86400
   active-timeout: -1
   is-concurrent: true
   is-share: true
