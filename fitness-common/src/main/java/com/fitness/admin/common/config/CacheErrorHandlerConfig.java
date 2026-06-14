@@ -3,7 +3,6 @@ package com.fitness.admin.common.config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
 import org.springframework.cache.annotation.CachingConfigurer;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,10 +12,13 @@ import org.springframework.context.annotation.Configuration;
  * <p>Spring Cache 的 {@code CacheInterceptor} 会捕获缓存读写异常并调用
  * {@link CacheErrorHandler}。默认实现 {@code SimpleCacheErrorHandler} 会重新抛出,
  * 导致接口 500。本配置把异常吞掉并降级。
+ *
+ * <p>{@code @EnableCaching} 已在 {@code RedisConfig} 上声明,此处不重复,避免
+ * Spring 在 {@code projectingArgumentResolverBeanPostProcessor} 等 BPP 创建阶段
+ * 提前拉取本 Bean 触发 “not eligible for getting processed” 警告。
  */
 @Slf4j
 @Configuration
-@EnableCaching
 public class CacheErrorHandlerConfig implements CachingConfigurer {
 
     @Override
