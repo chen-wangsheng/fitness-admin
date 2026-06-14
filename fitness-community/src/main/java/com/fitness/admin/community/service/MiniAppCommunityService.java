@@ -12,6 +12,7 @@ import com.fitness.admin.community.dto.*;
 import com.fitness.admin.community.entity.CommunityComment;
 import com.fitness.admin.community.entity.CommunityPost;
 import com.fitness.admin.community.entity.PostLike;
+import com.fitness.admin.community.entity.UserMute;
 import com.fitness.admin.community.mapper.CommunityCommentMapper;
 import com.fitness.admin.community.mapper.CommunityPostMapper;
 import com.fitness.admin.community.mapper.PostLikeMapper;
@@ -39,6 +40,7 @@ public class MiniAppCommunityService {
     private final UserMapper userMapper;
     private final PostLikeMapper postLikeMapper;
     private final ObjectMapper objectMapper;
+    private final UserMuteService userMuteService;
 
     /**
      * 获取帖子列表
@@ -108,6 +110,7 @@ public class MiniAppCommunityService {
     @Transactional
     public void createPost(CreatePostRequest request) {
         Long userId = getCurrentUserId();
+        checkMuted(userId, "发帖");
 
         CommunityPost post = new CommunityPost();
         post.setUserId(userId);
@@ -239,6 +242,7 @@ public class MiniAppCommunityService {
     @Transactional
     public void createComment(Long postId, CreateCommentRequest request) {
         Long userId = getCurrentUserId();
+        checkMuted(userId, "评论");
 
         CommunityPost post = postMapper.selectById(postId);
         if (post == null) {
@@ -363,5 +367,24 @@ public class MiniAppCommunityService {
             throw new BizException(ResultCodeEnum.UNAUTHORIZED);
         }
         return userId;
+    }
+
+    /**
+     * 禁言校验：当前用户若处于生效中禁言,抛 BizException 阻断写操作。
+     * 永久禁言(duration=-1)时不展示解除时间。
+     */
+    private void checkMuted(Long userId, String action) {
+        UserMute active = userMuteService.findActive(userId);
+        if (active == null) {
+            return;
+        }
+        String message;
+        if (active.getEndAt() == null) {
+            message = "您已被永久禁言,无法" + action;
+        } else {
+            String until = active.getEndAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            message = "您因 " + active.getReason() + " 被禁言,至 " + until + " 前无法" + action;
+        }
+        throw new BizException(message);
     }
 }

@@ -51,4 +51,20 @@ public class CommunityPostController extends BaseController {
         communityPostService.updateStatus(id, body.get("status"));
         return success();
     }
+
+    @Operation(summary = "删除动态")
+    @DeleteMapping("/{id}")
+    @SaCheckPermission("community:delete")
+    public R<Void> delete(@PathVariable Long id) {
+        communityPostService.delete(id);
+        return success();
+    }
+
+    @Operation(summary = "置顶/取消置顶")
+    @PutMapping("/{id}/pin")
+    @SaCheckPermission("community:update")
+    public R<Void> togglePin(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> body) {
+        communityPostService.togglePin(id, Boolean.TRUE.equals(body.get("pinned")));
+        return success();
+    }
 }

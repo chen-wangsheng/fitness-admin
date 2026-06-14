@@ -45,4 +45,19 @@ public class CommunityPostService {
         post.setStatus(status);
         communityPostMapper.updateById(post);
     }
+
+    public void delete(Long id) {
+        communityPostMapper.deleteById(id);
+    }
+
+    /**
+     * 置顶/取消置顶。pinned=true 时记录 pinned_at,便于按置顶时间排序。
+     */
+    public void togglePin(Long id, boolean pinned) {
+        CommunityPost update = new CommunityPost();
+        update.setId(id);
+        update.setPinned(pinned ? 1 : 0);
+        update.setPinnedAt(pinned ? LocalDateTime.now() : null);
+        communityPostMapper.updateById(update);
+    }
 }

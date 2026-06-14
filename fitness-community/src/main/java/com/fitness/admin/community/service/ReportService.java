@@ -17,11 +17,20 @@ public class ReportService {
         return reportMapper.selectPage(page, null);
     }
 
-    public void handle(Long id, String result, Long handlerId) {
+    /**
+     * 处理举报。action: confirmed | dismissed, mapped to status 1 | 2.
+     * reason 写入 handle_result;handlerId 写入 handler_id。
+     */
+    public void handle(Long id, String action, String reason, Long handlerId) {
+        Integer status = switch (action == null ? "" : action) {
+            case "confirmed" -> 1;
+            case "dismissed" -> 2;
+            default -> throw new IllegalArgumentException("action 仅支持 confirmed / dismissed");
+        };
         Report report = new Report();
         report.setId(id);
-        report.setStatus(1);
-        report.setHandleResult(result);
+        report.setStatus(status);
+        report.setHandleResult(reason);
         report.setHandlerId(handlerId);
         reportMapper.updateById(report);
     }

@@ -5,18 +5,18 @@ import com.fitness.admin.common.base.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.time.LocalDateTime;
+
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("post")
-public class CommunityPost extends BaseEntity {
+@TableName("user_mute")
+public class UserMute extends BaseEntity {
 
     private Long userId;
-    private String content;
-    private String images;
-    private Long workoutLogId;
-    private Integer likeCount;
-    private Integer commentCount;
+    private String reason;
+    private Integer durationDays;
+    private LocalDateTime startAt;
+    private LocalDateTime endAt;
+    private Long operatorId;
     private Integer status;
-    private Integer pinned;
-    private java.time.LocalDateTime pinnedAt;
 }
