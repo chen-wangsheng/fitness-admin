@@ -6,6 +6,7 @@ import com.fitness.admin.common.result.PageResult;
 import com.fitness.admin.common.result.R;
 import com.fitness.admin.community.dto.CreateCommentRequest;
 import com.fitness.admin.community.dto.CreatePostRequest;
+import com.fitness.admin.community.dto.LikeRequest;
 import com.fitness.admin.community.dto.LikeResponse;
 import com.fitness.admin.community.dto.PostDetailResponse;
 import com.fitness.admin.community.service.MiniAppCommunityService;
@@ -59,8 +60,8 @@ public class MiniAppCommunityController extends BaseController {
 
     @Operation(summary = "点赞/取消点赞")
     @PostMapping("/like")
-    public R<LikeResponse> toggleLike(@RequestParam Long postId) {
-        return success(miniAppCommunityService.toggleLike(postId));
+    public R<LikeResponse> toggleLike(@RequestBody LikeRequest request) {
+        return success(miniAppCommunityService.toggleLike(request.getPostId()));
     }
 
     @Operation(summary = "评论列表")

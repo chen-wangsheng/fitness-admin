@@ -2,6 +2,8 @@ package com.fitness.admin.community.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitness.admin.common.enums.ResultCodeEnum;
 import com.fitness.admin.common.exception.BizException;
 import com.fitness.admin.common.result.PageResult;
@@ -36,6 +38,7 @@ public class MiniAppCommunityService {
     private final CommunityCommentMapper commentMapper;
     private final UserMapper userMapper;
     private final PostLikeMapper postLikeMapper;
+    private final ObjectMapper objectMapper;
 
     /**
      * 获取帖子列表
@@ -109,7 +112,7 @@ public class MiniAppCommunityService {
         CommunityPost post = new CommunityPost();
         post.setUserId(userId);
         post.setContent(request.getContent());
-        post.setImages(request.getImages() != null ? String.join(",", request.getImages()) : null);
+        post.setImages(serializeImages(request.getImages()));
         post.setWorkoutLogId(request.getWorkoutLogId());
         post.setLikeCount(0);
         post.setCommentCount(0);
@@ -325,7 +328,30 @@ public class MiniAppCommunityService {
         if (images == null || images.isEmpty()) {
             return new ArrayList<>();
         }
-        return Arrays.asList(images.split(","));
+        String trimmed = images.trim();
+        if (trimmed.startsWith("[")) {
+            try {
+                return objectMapper.readValue(trimmed, new TypeReference<List<String>>() {});
+            } catch (Exception e) {
+                log.warn("解析图片JSON失败,回退到逗号分隔: {}", e.getMessage());
+            }
+        }
+        return Arrays.asList(trimmed.split(","));
+    }
+
+    /**
+     * 序列化图片列表为JSON数组字符串
+     */
+    private String serializeImages(List<String> images) {
+        if (images == null || images.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(images);
+        } catch (Exception e) {
+            log.error("序列化图片列表失败", e);
+            throw new BizException("图片数据处理失败");
+        }
     }
 
     /**
